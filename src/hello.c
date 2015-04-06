@@ -71,6 +71,9 @@ static double inf_end_timestamp;    /* we record time to ouput the result */
 static int pi = 0; /*use as the start point of neighbor packet_info */
 static int pj = 0;
 
+static int start_pointer = 0;
+static int end_pointer = 0;
+
 static pcap_t* pcap_handle = NULL;
 pcap_dumper_t *pkt;
 FILE *fin2;
@@ -473,7 +476,27 @@ int parse_80211_header(const unsigned char * buf,  struct packet_info* p)
 
 }
 
-
+int parse_tcp_header(const unsigned char *buf, struct packet_info* p,int left_len)
+{
+	/* data */
+	struct tcphdr* th;
+	if (len > 0 && (size_t)len < sizeof(struct tcphdr))
+		return -1;
+	th = (struct tcphdr*)*buf;
+	p->tcp_seq = ntohl(th->seq);
+	p->tcp_ack = ntohl(th->ack_seq);
+	int tcplen = 4*tcphdr->doff; /*tcp header len*/
+	if ((th->ack == 1) && (left_len == tcplen) )
+	{
+		p->tcp_type = TCP_ACK;
+		return TCP_ACK;
+	}
+	else
+	{ 
+		p->tcp_type = TCP_NON_ACK;
+		return TCP_NON_ACK;
+	}ß
+}
 /* return 1 if we parsed enough = min ieee header */
 int parse_packet(const unsigned char *buf,  struct packet_info* p)
 {
@@ -499,8 +522,11 @@ int parse_packet(const unsigned char *buf,  struct packet_info* p)
 			int ipl = ih->ip_hl*4;
 			
 			p->tcp_offset = radio + hdr + llc + ipl;
+			int left_len = p->len - hdr -llc - ipl
+			parse_tcp_header(buf+p->tcp_offset,p,left_len);
 		}else{
 			p->tcp_offset = radio + hdr + llc + IPV6; //ipv6
+			/*need to be continue...*/
 		}
 	}
 	
@@ -650,6 +676,63 @@ void update_list(struct inf_info *inf,int NUMBER, unsigned char mac1[], unsigned
 
 }
 
+/**************************************/
+static void write_frequent_update() {
+  //printf("Writing frequent log to %s\n", PENDING_FREQUENT_UPDATE_FILENAME);
+  FILE* handle = fopen(PENDING_FREQUENT_UPDATE_FILENAME, "w");
+ 
+  if (!handle) {
+    perror("Could not open update file for writing\n");
+    exit(1);
+  }
+ 	int rounds =(rpp - start_pointer + HOLD_TIME )%HOLD_TIME;
+ 	int i =0;
+ 	while(i < rounds )
+ 	{
+ 		if(from client to ap ack)
+ 		if(from ap to client ack)
+ 	}
+ /***************************/
+	if(debug == 1)
+	{
+	printf("unlock and fileclose is good!\n");
+	}
+/*****************************/
+  char update_filename[FILENAME_MAX];
+  snprintf(update_filename,
+           FILENAME_MAX,
+           FREQUENT_UPDATE_FILENAME,
+           mac,
+           nb->start_timeval.tv_sec,
+           frequent_sequence_number);
+  if (rename(PENDING_FREQUENT_UPDATE_FILENAME, update_filename)) {
+    perror("Could not stage update");
+    exit(1);
+  }
+  
+ /************************/
+	if(debug == 1)
+	{
+	printf("rename is good!\n");
+	}
+/*************************/
+
+  start_timestamp_microseconds
+      = nb->start_timeval.tv_sec + nb->start_timeval.tv_usec/NUM_MICROS_PER_SECOND;
+  ++frequent_sequence_number;
+
+    struct pcap_stat statistics;
+    pcap_stats(pcap_handle, &statistics);
+
+	if (debug == 11)
+	{
+		printf("received is: %d,dropped is: %d, total packets are :%d\n",statistics.ps_recv,statistics.ps_drop,rpp);
+	}
+	start_pointer = rpp;
+}
+
+
+/**************************************/
 
 static void write_frequent_update() {
   //printf("Writing frequent log to %s\n", PENDING_FREQUENT_UPDATE_FILENAME);
@@ -751,39 +834,32 @@ static void process_packet(
 
 	p.tv.tv_sec = header->ts.tv_sec;
 	p.tv.tv_usec = header->ts.tv_usec;
-	
-	//reset when step forward
-	//if(p.wlan_type == (u16)136){
-	//	if((str_equal(mac,ether_sprintf(p.wlan_src),2*MAC_LEN) != 1))
-
 	rpp++;
-	//memcpy(store[rpp%HOLD_TIME].tcp_header,bytes,16);
-	if((str_equal(mac,ether_sprintf(p.wlan_src),2*MAC_LEN) != 1))
+
+	/*begin store packet*/
+	memcpy(store[rpp%HOLD_TIME].tcp_header,bytes+p.tcp_offset,16);
+	memcpy(store[rpp%HOLD_TIME].wlan_src,p.wlan_src,MAC_LEN);
+	memcpy(store[rpp%HOLD_TIME].wlan_dst,p.wlan_dst,MAC_LEN);
+	store[rpp%HOLD_TIME].tv.tv_sec = p.tv.tv_sec;
+	store[rpp%HOLD_TIME].tv.tv_usec = p.tv.tv_usec;
+	store[rpp%HOLD_TIME].len = p.len;
+	store[rpp%HOLD_TIME].wlan_type = p.wlan_type;
+	store[rpp%HOLD_TIME].wlan_retry = p.wlan_retry;
+	store[rpp%HOLD_TIME].phy_signal = p.phy_signal;
+	store[rpp%HOLD_TIME].phy_rate = p.phy_rate;
+	store[rpp%HOLD_TIME].timestamp = p.timestamp;
+	pj = rpp%HOLD_TIME;
+	end_pointer = rpp%HOLD_TIME;
+	if(debug == 1)
 	{
-		memcpy(store[rpp%HOLD_TIME].tcp_header,bytes+p.tcp_offset,16);
-		memcpy(store[rpp%HOLD_TIME].wlan_src,p.wlan_src,MAC_LEN);
-		memcpy(store[rpp%HOLD_TIME].wlan_dst,p.wlan_dst,MAC_LEN);
-		store[rpp%HOLD_TIME].tv.tv_sec = p.tv.tv_sec;
-		store[rpp%HOLD_TIME].tv.tv_usec = p.tv.tv_usec;
-		store[rpp%HOLD_TIME].len = p.len;
-		store[rpp%HOLD_TIME].wlan_type = p.wlan_type;
-		store[rpp%HOLD_TIME].wlan_retry = p.wlan_retry;
-		store[rpp%HOLD_TIME].phy_signal = p.phy_signal;
-		store[rpp%HOLD_TIME].phy_rate = p.phy_rate;
-		store[rpp%HOLD_TIME].timestamp = p.timestamp;
-		pj = rpp%HOLD_TIME;
-
-		if(debug == 1)
-		{
-			double neighbor_timestamp = (double)p.timestamp/(double)NUM_NANO_PER_SECOND;	
-			double libpcap_timestamp = p.tv.tv_sec + (double)p.tv.tv_usec/(double)NUM_MICROS_PER_SECOND;
-		
-			printf("+++++packet %d:%f<---->%f\n",rpp,neighbor_timestamp,libpcap_timestamp);
-			
-		}
-
+		double neighbor_timestamp = (double)p.timestamp/(double)NUM_NANO_PER_SECOND;	
+		double libpcap_timestamp = p.tv.tv_sec + (double)p.tv.tv_usec/(double)NUM_MICROS_PER_SECOND;
+	
+		printf("+++++packet %d:%f<---->%f\n",rpp,neighbor_timestamp,libpcap_timestamp);	
 	}
-	else
+	/*end store packet*/
+	
+	if((str_equal(mac,ether_sprintf(p.wlan_src),2*MAC_LEN) == 1))
 	{
 		double tw = p.tv.tv_sec + (double)p.tv.tv_usec/(double)NUM_MICROS_PER_SECOND;
 		double te = (double)p.timestamp/(double)NUM_NANO_PER_SECOND;
@@ -858,26 +934,6 @@ static void process_packet(
 	if ((inf_end_timestamp - inf_start_timestamp) > FREQUENT_UPDATE_PERIOD_SECONDS)
 	{
 		/*print out*/
-		int j = 0;
-		for (j = 0 ; j < CS_NUMBER ;j ++)
-		{
-			if (cs[j].value == 0)
-				break;
-			printf("cs mac:%s,val:%f\n",ether_sprintf(cs[j].wlan_src),cs[j].value);
-		}
-			
-		for (j = 0 ; j < HT_NUMBER ;j ++)
-		{
-			if (ht[j].value == 0)
-				break;
-			printf("ht mac:%s,val:%f\n",ether_sprintf(ht[j].wlan_src),ht[j].value);
-		}
-		
-		if (cs[0].value == 0)
-			printf("\n-------------> NO CS <--------------\n");	
-		if (ht[0].value == 0)
-			printf("\n-------------> NO HT <--------------\n");	
-
 		write_frequent_update(); /*write the inf into the file*/
 		
 		memset(cs,0,sizeof(cs));
@@ -886,12 +942,13 @@ static void process_packet(
 		inf_start_timestamp = inf_end_timestamp;
 	}
 
-//	if((str_equal(mac,ether_sprintf(p.wlan_src),2*MAC_LEN) == 1) || (str_equal(mac,ether_sprintf(p.wlan_dst),2*MAC_LEN))== 1)
-//	{	
-//		//pch_count_debug ++;
-//		if(p.wlan_retry == 1)
-//			pch_count_debug ++;
-//	}
+	if ((inf_end_timestamp - delay_start_timestamp) > FREQUENT_UPDATE_DELAY_SECONDS)
+	{
+		/*print out*/
+		write_frequent_update_delay(); /*write the delay into the file*/
+		delay_start_timestamp = inf_end_timestamp;
+	}
+
 	if(debug == 10) //just for debug count
 	{
 		if((pch_count_debug % every) == 0)
