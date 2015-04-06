@@ -486,6 +486,7 @@ int parse_tcp_header(const unsigned char *buf, struct packet_info* p,int left_le
 	p->tcp_seq = ntohl(th->seq);
 	p->tcp_ack = ntohl(th->ack_seq);
 	int tcplen = 4*tcphdr->doff; /*tcp header len*/
+	p->tcp_next_seq = p->tcp_seq + left_len - tcplen;
 	if ((th->ack == 1) && (left_len == tcplen) )
 	{
 		p->tcp_type = TCP_ACK;
@@ -684,8 +685,11 @@ void print_delay(struct delay_info* delay, int index)
 		{
 			if(store[ii-i].tcp_next_seq == store[index].tcp_ack)
 			{
-				delay.ddelay = store[ii-i].timestamp1 - store[ii-i].timestamp2;
-				delay.udelay = store[ii].timestamp2 - store[ii-i].timestamp2;
+				double tw_data = store[ii-i].tv.tv_sec + (double)store[ii-i].tv.tv_usec/(double)NUM_MICROS_PER_SECOND;
+				double te_data = (double)store[ii-i].timestamp/(double)NUM_NANO_PER_SECOND;
+				double tr_ack = (double)store[ii].timestamp/(double)NUM_NANO_PER_SECOND;
+				delay.ddelay = te_data - tw_data;
+				delay.udelay = tr_ack - te_data;
 				break;
 			}
 		}
@@ -698,8 +702,11 @@ void print_delay(struct delay_info* delay, int index)
 		{
 			if(store[ii-i].tcp_next_seq == store[index].tcp_ack)
 			{
-				delay.ddelay = store[ii].timestamp1 - store[ii].timestamp2;
-				delay.rtt = store[ii].timestamp2 - store[ii-i].timestamp2;
+				double tr_data = (double)store[ii-i].timestamp/(double)NUM_NANO_PER_SECOND;
+				double tw_ack = store[ii].tv.tv_sec + (double)store[ii].tv.tv_usec/(double)NUM_MICROS_PER_SECOND;
+				double te_ack = (double)store[ii].timestamp/(double)NUM_NANO_PER_SECOND;
+				delay.ddelay = te_ack - tw_ack;
+				delay.rtt = tw_ack - tr_data;
 				break;
 			}
 		}
@@ -751,7 +758,7 @@ static void write_frequent_update_delay() {
            FILENAME_MAX,
            FREQUENT_UPDATE_FILENAME,
            mac,
-           nb->start_timeval.tv_sec,
+           1,
            frequent_sequence_number);
   if (rename(PENDING_FREQUENT_UPDATE_FILENAME, update_filename)) {
     perror("Could not stage update");

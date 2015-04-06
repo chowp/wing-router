@@ -94,7 +94,14 @@ struct inf_info {
 	unsigned char wlan_dst[MAC_LEN];
 	float  value;
 };
-
+/***************
+ store the delay break down info
+****************/
+struct delay_info {
+	double udelay;
+	double ddelay;
+	double rtt;
+};
 struct packet_info {
 	/* general */
 	struct timeval tv;
@@ -116,6 +123,7 @@ struct packet_info {
 	int tcp_type;
 	unsigned int tcp_seq;
 	unsigned int tcp_ack;
+	unsigned int tcp_next_seq;
 	unsigned int		wlan_nav;	/* frame NAV duration */
 	unsigned int		wlan_retry:1;
 	/*digest*/
