@@ -675,9 +675,45 @@ void update_list(struct inf_info *inf,int NUMBER, unsigned char mac1[], unsigned
 	
 
 }
+void print_delay(struct delay_info* delay, int index)
+{
+	if( (store[index] == TCP_ACK ) && (str_equal(mac,ether_sprintf(p.wlan_dst),2*MAC_LEN) == 1) )
+	{
+		int i ;
+		for(i = 1;i <5; i++)
+		{
+			if(store[ii-i].tcp_next_seq == store[index].tcp_ack)
+			{
+				delay.ddelay = store[ii-i].timestamp1 - store[ii-i].timestamp2;
+				delay.udelay = store[ii].timestamp2 - store[ii-i].timestamp2;
+				break;
+			}
+		}
+		return C2AP_ACK;
+	}
+	else if( (store[index] == TCP_ACK) && (str_equal(mac,ether_sprintf(p.wlan_src),2*MAC_LEN) == 1) )
+	{
+		int i ;
+		for(i = 1;i <5; i++)
+		{
+			if(store[ii-i].tcp_next_seq == store[index].tcp_ack)
+			{
+				delay.ddelay = store[ii].timestamp1 - store[ii].timestamp2;
+				delay.rtt = store[ii].timestamp2 - store[ii-i].timestamp2;
+				break;
+			}
+		}
+		return AP2C_ACK;
+	}
+	else
+	{
+		/*do nothing*/
+	}
+}
+
 
 /**************************************/
-static void write_frequent_update() {
+static void write_frequent_update_delay() {
   //printf("Writing frequent log to %s\n", PENDING_FREQUENT_UPDATE_FILENAME);
   FILE* handle = fopen(PENDING_FREQUENT_UPDATE_FILENAME, "w");
  
@@ -686,11 +722,23 @@ static void write_frequent_update() {
     exit(1);
   }
  	int rounds =(rpp - start_pointer + HOLD_TIME )%HOLD_TIME;
- 	int i =0;
+ 	int i = 0;
+ 	int ii = start_pointer;
  	while(i < rounds )
  	{
- 		if(from client to ap ack)
- 		if(from ap to client ack)
+ 		sturct delay_info delay;
+ 		direction = print_delay(delay,ii);
+ 		switch(direction):
+ 		{
+ 			case C2AP_ACK:
+ 				fprintf("%f,%f,\n",delay->udelay,delay->ddelay);
+ 			case AP2C_ACK:
+ 				fprintf(",%f,%f\n",delay->delay,delay->rtt);
+ 			default:
+ 			/*do nothing*/
+ 		}
+ 		i = (i+1);
+ 		ii = (ii+1)%HOLD_TIME;
  	}
  /***************************/
 	if(debug == 1)
