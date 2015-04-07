@@ -5,9 +5,9 @@
 #include <sys/time.h>
 
 #define TCP_ACK 1
-#define TCP_NON_ACK 0
+#define TCP_NON_ACK 2
 #define C2AP_ACK 1
-#define AP2C_ACK 0
+#define AP2C_ACK 2
 
 #define MAC_LEN			6
 #define HOLD_TIME       60000

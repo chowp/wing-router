@@ -482,6 +482,7 @@ int parse_80211_header(const unsigned char * buf,  struct packet_info* p)
 int parse_tcp_header(const unsigned char *buf, struct packet_info* p,int left_len)
 {
 	/* data */
+	printf("parse tcp header\n");
 	struct tcphdr* th;
 //	if (len > 0 && (size_t)len < sizeof(struct tcphdr))
 //		return -1;
@@ -490,6 +491,9 @@ int parse_tcp_header(const unsigned char *buf, struct packet_info* p,int left_le
 	p->tcp_ack = ntohl(th->ack_seq);
 	int tcplen = 4*th->doff; /*tcp header len*/
 	p->tcp_next_seq = p->tcp_seq + left_len - tcplen;
+	
+	printf("seq=%d,ack=%d,nex_seq=%d",p->tcp_seq,p->tcp_ack,p->tcp_next_seq);
+	printf("tcplen=%d,left_len=%d",tcplen,left_len);
 	if ((th->ack == 1) && (left_len == tcplen) )
 	{
 		p->tcp_type = TCP_ACK;
@@ -500,6 +504,7 @@ int parse_tcp_header(const unsigned char *buf, struct packet_info* p,int left_le
 		p->tcp_type = TCP_NON_ACK;
 		return TCP_NON_ACK;
 	}
+	
 }
 /* return 1 if we parsed enough = min ieee header */
 int parse_packet(const unsigned char *buf,  struct packet_info* p)
