@@ -482,7 +482,6 @@ int parse_80211_header(const unsigned char * buf,  struct packet_info* p)
 int parse_tcp_header(const unsigned char *buf, struct packet_info* p,int left_len)
 {
 	/* data */
-	printf("parse tcp header\n");
 	struct tcphdr* th;
 //	if (len > 0 && (size_t)len < sizeof(struct tcphdr))
 //		return -1;
@@ -492,8 +491,8 @@ int parse_tcp_header(const unsigned char *buf, struct packet_info* p,int left_le
 	int tcplen = 4*th->doff; /*tcp header len*/
 	p->tcp_next_seq = p->tcp_seq + left_len - tcplen;
 	
-	printf("seq=%d,ack=%d,nex_seq=%d",p->tcp_seq,p->tcp_ack,p->tcp_next_seq);
-	printf("tcplen=%d,left_len=%d",tcplen,left_len);
+	printf("seq=%u,ack=%u,nex_seq=%u",p->tcp_seq,p->tcp_ack,p->tcp_next_seq);
+	printf("tcplen=%d,left_len=%d\n",tcplen,left_len);
 	if ((th->ack == 1) && (left_len == tcplen) )
 	{
 		p->tcp_type = TCP_ACK;
@@ -731,7 +730,7 @@ static int print_delay(struct delay_info* delay, int index)
 static int write_frequent_update_delay() {
   //printf("Writing frequent log to %s\n", PENDING_FREQUENT_UPDATE_FILENAME);
   FILE* handle = fopen(PENDING_FREQUENT_UPDATE_FILENAME_DELAY, "w");
-printf("in the write_frequent_update_delay file!"); 
+printf("in the write_frequent_update_delay file!\n"); 
   if (!handle) {
     perror("Could not open update file for writing\n");
     exit(1);
@@ -739,12 +738,13 @@ printf("in the write_frequent_update_delay file!");
  	int rounds =(rpp - start_pointer + HOLD_TIME )%HOLD_TIME;
  	int i = 0;
  	int ii = start_pointer;
+ 	printf("from %d to %d, rounds is %d\n",start_pointer,rpp,rounds);
  	while(i < rounds )
  	{
 		
  		struct delay_info delay;
  		int direction = print_delay(&delay,ii);
-		printf("direction is:%d,ii is :%d",direction,ii);
+		//printf("direction is:%d,ii is :%d",direction,ii);
  		switch(direction)
  		{
  			case C2AP_ACK:
@@ -1013,7 +1013,7 @@ static void process_packet(
 	if ((inf_end_timestamp - delay_start_timestamp) > FREQUENT_UPDATE_DELAY_SECONDS)
 	{
 		/*print out*/
-		printf("begin print...");
+		printf("begin print...\n");
 		write_frequent_update_delay(); /*write the delay into the file*/
 		delay_start_timestamp = inf_end_timestamp;
 	}
