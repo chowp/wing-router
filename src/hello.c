@@ -596,14 +596,14 @@ void update_list(struct inf_info *inf,int NUMBER, unsigned char mac1[], unsigned
 	if (debug == 1)
 		printf("debug parameter %s+%s:%f\n",ether_sprintf(mac1),ether_sprintf2(mac2),value);
 
-	printf("\n*******************************\n");
+	//printf("\n*******************************\n");
 	int i;
 	for(i=0;i<NUMBER;i++)
 	{
-		printf("*  %s+%s:%f\n",ether_sprintf(inf[i].wlan_src),ether_sprintf2(inf[i].wlan_dst),inf[i].value);
+		//printf("*  %s+%s:%f\n",ether_sprintf(inf[i].wlan_src),ether_sprintf2(inf[i].wlan_dst),inf[i].value);
 		if (inf[i].value == 0)
 		{
-			printf("*******************************\n\n");
+			//printf("*******************************\n\n");
 			break;
 			
 		}
@@ -621,8 +621,8 @@ void update_list(struct inf_info *inf,int NUMBER, unsigned char mac1[], unsigned
 
 		{
 			inf[i].value = inf[i].value + value; 
-			printf("US %s+%s:%f\n",ether_sprintf(inf[i].wlan_src),ether_sprintf2(inf[i].wlan_dst),inf[i].value);
-			printf("*******************************\n\n");
+			//printf("US %s+%s:%f\n",ether_sprintf(inf[i].wlan_src),ether_sprintf2(inf[i].wlan_dst),inf[i].value);
+			//printf("*******************************\n\n");
 	
 			return;
 		}
@@ -639,8 +639,8 @@ void update_list(struct inf_info *inf,int NUMBER, unsigned char mac1[], unsigned
 		  )
 		{
 			inf[i].value = inf[i].value + value; 
-			printf("UD %s+%s:%f\n",ether_sprintf(inf[i].wlan_src),ether_sprintf2(inf[i].wlan_dst),inf[i].value);
-			printf("*******************************\n\n");
+			//printf("UD %s+%s:%f\n",ether_sprintf(inf[i].wlan_src),ether_sprintf2(inf[i].wlan_dst),inf[i].value);
+			//printf("*******************************\n\n");
 	
 			return;
 		}
@@ -656,8 +656,8 @@ void update_list(struct inf_info *inf,int NUMBER, unsigned char mac1[], unsigned
 				 
 		)
 	{
-		printf("either 00000 or FFFFF !! return\n");
-		printf("*******************************\n\n");
+		//printf("either 00000 or FFFFF !! return\n");
+		//printf("*******************************\n\n");
 	
 		return;
 	}
@@ -670,8 +670,8 @@ void update_list(struct inf_info *inf,int NUMBER, unsigned char mac1[], unsigned
 			memcpy(inf[i].wlan_dst,mac2,MAC_LEN);
 			
 			inf[i].value = value;
-			printf("C  %s+%s:%f\n",ether_sprintf(mac1),ether_sprintf2(mac2),inf[i].value);
-			printf("*******************************\n\n");
+			//printf("C  %s+%s:%f\n",ether_sprintf(mac1),ether_sprintf2(mac2),inf[i].value);
+			//printf("*******************************\n\n");
 			return; /*pay attention whether it will jump out!*/
 		}
 	}
@@ -726,7 +726,7 @@ static int print_delay(struct delay_info* delay, int index)
 static int write_frequent_update_delay() {
   //printf("Writing frequent log to %s\n", PENDING_FREQUENT_UPDATE_FILENAME);
   FILE* handle = fopen(PENDING_FREQUENT_UPDATE_FILENAME_DELAY, "w");
- 
+printf("in the write_frequent_update_delay file!"); 
   if (!handle) {
     perror("Could not open update file for writing\n");
     exit(1);
@@ -736,8 +736,10 @@ static int write_frequent_update_delay() {
  	int ii = start_pointer;
  	while(i < rounds )
  	{
+		
  		struct delay_info delay;
  		int direction = print_delay(&delay,ii);
+		printf("direction is:%d,ii is :%d",direction,ii);
  		switch(direction)
  		{
  			case C2AP_ACK:
@@ -926,7 +928,7 @@ static void process_packet(
 		double te = (double)p.timestamp/(double)NUM_NANO_PER_SECOND;
 		
 
-		if(debug != 2)
+		if(debug == 1)
 			printf("\n-----[tw,te]:[%f,%f]\n",tw,te);
 		double neighbor_timestamp = (double)store[pi].timestamp/(double)NUM_NANO_PER_SECOND;	
 		double libpcap_timestamp = store[pi].tv.tv_sec + (double)store[pi].tv.tv_usec/(double)NUM_MICROS_PER_SECOND;
@@ -1006,6 +1008,7 @@ static void process_packet(
 	if ((inf_end_timestamp - delay_start_timestamp) > FREQUENT_UPDATE_DELAY_SECONDS)
 	{
 		/*print out*/
+		printf("begin print...");
 		write_frequent_update_delay(); /*write the delay into the file*/
 		delay_start_timestamp = inf_end_timestamp;
 	}
