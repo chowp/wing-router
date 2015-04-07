@@ -6,6 +6,8 @@
 
 #define TCP_ACK 1
 #define TCP_NON_ACK 0
+#define C2AP_ACK 1
+#define AP2C_ACK 0
 
 #define MAC_LEN			6
 #define HOLD_TIME       60000
@@ -98,9 +100,9 @@ struct inf_info {
  store the delay break down info
 ****************/
 struct delay_info {
-	double udelay;
-	double ddelay;
-	double rtt;
+	float udelay;
+	float ddelay;
+	float rtt;
 };
 struct packet_info {
 	/* general */

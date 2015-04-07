@@ -13,7 +13,7 @@
 #include "ieee80211_radiotap.h"
 #include "ieee80211.h"
 #include "hello.h"
-
+#include <netinet/tcp.h>
 #include <unistd.h>
 #include <signal.h>
 //#include <time.h>
@@ -36,6 +36,7 @@ sigset_t block_set;
 #define DUMP_DIR "/tmp/bismark-passive/m111.cap"
 #define PENDING_UPDATE_FILENAME "/tmp/bismark-passive/current-update.gz"
 #define PENDING_FREQUENT_UPDATE_FILENAME "/tmp/bismark-passive/current-frequent-update"
+#define PENDING_FREQUENT_UPDATE_FILENAME_DELAY "/tmp/bismark-passive/current-frequent-update-delay"
 #define UPDATE_FILENAME "/tmp/bismark-uploads/passive/%s-%" PRIu64 "-%d.gz"
 #define FREQUENT_UPDATE_FILENAME "/tmp/bismark-uploads/passive-frequent/%s-%d-%d"
 #define UPLOAD_FAILURES_FILENAME "/tmp/bismark-data-transmit-failures.log"
@@ -44,6 +45,7 @@ sigset_t block_set;
 #define NUM_NANO_PER_SECOND   1e9
 static int hold[HOLD_TIME];
 static int FREQUENT_UPDATE_PERIOD_SECONDS;
+static int FREQUENT_UPDATE_DELAY_SECONDS;
 
 static unsigned char bismark_id[MAC_LEN];
 static char mac[12];
@@ -67,6 +69,7 @@ struct inf_info cs[CS_NUMBER]; /* used to store cs info in time gamma */
 struct inf_info ht[HT_NUMBER]; /* used to store ht info in time gamma */
 struct inf_info ht_tmp[HT_NUMBER];
 static double inf_start_timestamp;
+static double delay_start_timestamp;
 static double inf_end_timestamp;    /* we record time to ouput the result */
 static int pi = 0; /*use as the start point of neighbor packet_info */
 static int pj = 0;
@@ -480,12 +483,12 @@ int parse_tcp_header(const unsigned char *buf, struct packet_info* p,int left_le
 {
 	/* data */
 	struct tcphdr* th;
-	if (len > 0 && (size_t)len < sizeof(struct tcphdr))
-		return -1;
+//	if (len > 0 && (size_t)len < sizeof(struct tcphdr))
+//		return -1;
 	th = (struct tcphdr*)*buf;
 	p->tcp_seq = ntohl(th->seq);
 	p->tcp_ack = ntohl(th->ack_seq);
-	int tcplen = 4*tcphdr->doff; /*tcp header len*/
+	int tcplen = 4*th->doff; /*tcp header len*/
 	p->tcp_next_seq = p->tcp_seq + left_len - tcplen;
 	if ((th->ack == 1) && (left_len == tcplen) )
 	{
@@ -496,7 +499,7 @@ int parse_tcp_header(const unsigned char *buf, struct packet_info* p,int left_le
 	{ 
 		p->tcp_type = TCP_NON_ACK;
 		return TCP_NON_ACK;
-	}ß
+	}
 }
 /* return 1 if we parsed enough = min ieee header */
 int parse_packet(const unsigned char *buf,  struct packet_info* p)
@@ -523,7 +526,7 @@ int parse_packet(const unsigned char *buf,  struct packet_info* p)
 			int ipl = ih->ip_hl*4;
 			
 			p->tcp_offset = radio + hdr + llc + ipl;
-			int left_len = p->len - hdr -llc - ipl
+			int left_len = p->len - hdr -llc - ipl;
 			parse_tcp_header(buf+p->tcp_offset,p,left_len);
 		}else{
 			p->tcp_offset = radio + hdr + llc + IPV6; //ipv6
@@ -676,37 +679,37 @@ void update_list(struct inf_info *inf,int NUMBER, unsigned char mac1[], unsigned
 	
 
 }
-void print_delay(struct delay_info* delay, int index)
+static int print_delay(struct delay_info* delay, int index)
 {
-	if( (store[index] == TCP_ACK ) && (str_equal(mac,ether_sprintf(p.wlan_dst),2*MAC_LEN) == 1) )
+	if( (store[index].tcp_type == TCP_ACK ) && (str_equal(mac,ether_sprintf(p.wlan_dst),2*MAC_LEN) == 1) )
 	{
 		int i ;
 		for(i = 1;i <5; i++)
 		{
-			if(store[ii-i].tcp_next_seq == store[index].tcp_ack)
+			if(store[index-i].tcp_next_seq == store[index].tcp_ack)
 			{
-				double tw_data = store[ii-i].tv.tv_sec + (double)store[ii-i].tv.tv_usec/(double)NUM_MICROS_PER_SECOND;
-				double te_data = (double)store[ii-i].timestamp/(double)NUM_NANO_PER_SECOND;
-				double tr_ack = (double)store[ii].timestamp/(double)NUM_NANO_PER_SECOND;
-				delay.ddelay = te_data - tw_data;
-				delay.udelay = tr_ack - te_data;
+				double tw_data = store[index-i].tv.tv_sec + (double)store[index-i].tv.tv_usec/(double)NUM_MICROS_PER_SECOND;
+				double te_data = (double)store[index-i].timestamp/(double)NUM_NANO_PER_SECOND;
+				double tr_ack = (double)store[index].timestamp/(double)NUM_NANO_PER_SECOND;
+				delay->ddelay = te_data - tw_data;
+				delay->udelay = tr_ack - te_data;
 				break;
 			}
 		}
 		return C2AP_ACK;
 	}
-	else if( (store[index] == TCP_ACK) && (str_equal(mac,ether_sprintf(p.wlan_src),2*MAC_LEN) == 1) )
+	else if( (store[index].tcp_type == TCP_ACK) && (str_equal(mac,ether_sprintf(p.wlan_src),2*MAC_LEN) == 1) )
 	{
 		int i ;
 		for(i = 1;i <5; i++)
 		{
-			if(store[ii-i].tcp_next_seq == store[index].tcp_ack)
+			if(store[index-i].tcp_next_seq == store[index].tcp_ack)
 			{
-				double tr_data = (double)store[ii-i].timestamp/(double)NUM_NANO_PER_SECOND;
-				double tw_ack = store[ii].tv.tv_sec + (double)store[ii].tv.tv_usec/(double)NUM_MICROS_PER_SECOND;
-				double te_ack = (double)store[ii].timestamp/(double)NUM_NANO_PER_SECOND;
-				delay.ddelay = te_ack - tw_ack;
-				delay.rtt = tw_ack - tr_data;
+				double tr_data = (double)store[index-i].timestamp/(double)NUM_NANO_PER_SECOND;
+				double tw_ack = store[index].tv.tv_sec + (double)store[index].tv.tv_usec/(double)NUM_MICROS_PER_SECOND;
+				double te_ack = (double)store[index].timestamp/(double)NUM_NANO_PER_SECOND;
+				delay->ddelay = te_ack - tw_ack;
+				delay->rtt = tw_ack - tr_data;
 				break;
 			}
 		}
@@ -720,9 +723,9 @@ void print_delay(struct delay_info* delay, int index)
 
 
 /**************************************/
-static void write_frequent_update_delay() {
+static int write_frequent_update_delay() {
   //printf("Writing frequent log to %s\n", PENDING_FREQUENT_UPDATE_FILENAME);
-  FILE* handle = fopen(PENDING_FREQUENT_UPDATE_FILENAME, "w");
+  FILE* handle = fopen(PENDING_FREQUENT_UPDATE_FILENAME_DELAY, "w");
  
   if (!handle) {
     perror("Could not open update file for writing\n");
@@ -733,16 +736,19 @@ static void write_frequent_update_delay() {
  	int ii = start_pointer;
  	while(i < rounds )
  	{
- 		sturct delay_info delay;
- 		direction = print_delay(delay,ii);
- 		switch(direction):
+ 		struct delay_info delay;
+ 		int direction = print_delay(&delay,ii);
+ 		switch(direction)
  		{
  			case C2AP_ACK:
- 				fprintf("%f,%f,\n",delay->udelay,delay->ddelay);
+ 				fprintf(handle,"%f,%f,\n",delay.udelay,delay.ddelay);
+				break;
  			case AP2C_ACK:
- 				fprintf(",%f,%f\n",delay->delay,delay->rtt);
+ 				fprintf(handle,",%f,%f\n",delay.ddelay,delay.rtt);
+				break;
  			default:
  			/*do nothing*/
+				break;
  		}
  		i = (i+1);
  		ii = (ii+1)%HOLD_TIME;
@@ -760,7 +766,7 @@ static void write_frequent_update_delay() {
            mac,
            1,
            frequent_sequence_number);
-  if (rename(PENDING_FREQUENT_UPDATE_FILENAME, update_filename)) {
+  if (rename(PENDING_FREQUENT_UPDATE_FILENAME_DELAY, update_filename)) {
     perror("Could not stage update");
     exit(1);
   }
@@ -870,7 +876,7 @@ static void process_packet(
  //   exit(1);
  // }
 
-	int i = 0;
+//	int i = 0;
 	float busywait = 0;
   ++rp;
 	//if(debug == 1)
@@ -1095,7 +1101,8 @@ int main(int argc,char *argv[]){
 	memcpy(mac,argv[4],12);
 	printf("%s\n",mac);
 	every = atoi(argv[5]);
-    //fin2=fopen(argv[2],"a+");
+	FREQUENT_UPDATE_DELAY_SECONDS = every;
+ //fin2=fopen(argv[2],"a+");
 
 	//if(fin2==NULL)
 	//{
