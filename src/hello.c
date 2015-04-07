@@ -890,9 +890,9 @@ static void process_packet(
 	//	printf("receive %d packets\n",rp);
 
 	memset(&p, 0, sizeof(p));
-	parse_packet(bytes,&p);
 	p.len = header->len;
-
+	parse_packet(bytes,&p);
+	
 	//fiter
 	//if((str_equal(mac,ether_sprintf(p.wlan_src),2*MAC_LEN) != 1))
 	//{
