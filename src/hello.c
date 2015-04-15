@@ -33,13 +33,13 @@ sigset_t block_set;
 #define false 0
 #define true 1
 
-#define DUMP_DIR "/tmp/bismark-passive/m111.cap"
-#define PENDING_UPDATE_FILENAME "/tmp/bismark-passive/current-update.gz"
-#define PENDING_FREQUENT_UPDATE_FILENAME "/tmp/bismark-passive/current-frequent-update"
-#define PENDING_FREQUENT_UPDATE_FILENAME_DELAY "/tmp/bismark-passive/current-frequent-update-delay"
-#define UPDATE_FILENAME "/tmp/bismark-uploads/passive/%s-%" PRIu64 "-%d.gz"
-#define FREQUENT_UPDATE_FILENAME "/tmp/bismark-uploads/passive-frequent/%s-%d-%d"
-#define UPLOAD_FAILURES_FILENAME "/tmp/bismark-data-transmit-failures.log"
+#define DUMP_DIR "/tmp/wifiunion-passive/m111.cap"
+#define PENDING_UPDATE_FILENAME "/tmp/wifiunion-passive/current-update.gz"
+#define PENDING_FREQUENT_UPDATE_FILENAME "/tmp/wifiunion-passive/current-frequent-update"
+#define PENDING_FREQUENT_UPDATE_FILENAME_DELAY "/tmp/wifiunion-passive/current-frequent-update-delay"
+#define UPDATE_FILENAME "/tmp/wifiunion-uploads/%s/passive/%s-%" PRIu64 "-%d.gz"
+#define FREQUENT_UPDATE_FILENAME "/tmp/wifiunion-uploads/%s/passive-frequent/%s-%d-%d"
+#define UPLOAD_FAILURES_FILENAME "/tmp/wifiunion-data-transmit-failures.log"
 //#define FREQUENT_UPDATE_PERIOD_SECONDS 30
 #define NUM_MICROS_PER_SECOND 1e6
 #define NUM_NANO_PER_SECOND   1e9
@@ -679,52 +679,7 @@ void update_list(struct inf_info *inf,int NUMBER, unsigned char mac1[], unsigned
 			return; /*pay attention whether it will jump out!*/
 		}
 	}
-
-	
-
 }
-static int print_delay(struct delay_info* delay, int index)
-{
-	if( (store[index].tcp_type == TCP_ACK ) && (str_equal(mac,ether_sprintf(p.wlan_dst),2*MAC_LEN) == 1) )
-	{
-		int i ;
-		for(i = 1;i <5; i++)
-		{
-			if(store[index-i].tcp_next_seq == store[index].tcp_ack)
-			{
-				double tw_data = store[index-i].tv.tv_sec + (double)store[index-i].tv.tv_usec/(double)NUM_MICROS_PER_SECOND;
-				double te_data = (double)store[index-i].timestamp/(double)NUM_NANO_PER_SECOND;
-				double tr_ack = (double)store[index].timestamp/(double)NUM_NANO_PER_SECOND;
-				delay->ddelay = te_data - tw_data;
-				delay->udelay = tr_ack - te_data;
-				break;
-			}
-		}
-		return C2AP_ACK;
-	}
-	else if( (store[index].tcp_type == TCP_ACK) && (str_equal(mac,ether_sprintf(p.wlan_src),2*MAC_LEN) == 1) )
-	{
-		int i ;
-		for(i = 1;i <5; i++)
-		{
-			if(store[index-i].tcp_next_seq == store[index].tcp_ack)
-			{
-				double tr_data = (double)store[index-i].timestamp/(double)NUM_NANO_PER_SECOND;
-				double tw_ack = store[index].tv.tv_sec + (double)store[index].tv.tv_usec/(double)NUM_MICROS_PER_SECOND;
-				double te_ack = (double)store[index].timestamp/(double)NUM_NANO_PER_SECOND;
-				delay->ddelay = te_ack - tw_ack;
-				delay->rtt = tw_ack - tr_data;
-				break;
-			}
-		}
-		return AP2C_ACK;
-	}
-	else
-	{
-		/*do nothing*/
-	}
-}
-
 
 /**************************************/
 static int write_frequent_update_delay() {
@@ -741,23 +696,14 @@ printf("in the write_frequent_update_delay file!\n");
  	printf("from %d to %d, rounds is %d\n",start_pointer,rpp,rounds);
  	while(i < rounds )
  	{
-		
- 		struct delay_info delay;
- 		int direction = print_delay(&delay,ii);
-		//printf("direction is:%d,ii is :%d",direction,ii);
- 		switch(direction)
- 		{
- 			case C2AP_ACK:
- 				fprintf(handle,"%f,%f,\n",delay.udelay,delay.ddelay);
-				break;
- 			case AP2C_ACK:
- 				fprintf(handle,",%f,%f\n",delay.ddelay,delay.rtt);
-				break;
- 			default:
- 			/*do nothing*/
-				break;
- 		}
- 		i = (i+1);
+ 		if(p.wlan_type == (u16)136){
+			double time_pch1 = (double)((double)store[ii].tv.tv_sec + (double)((double)store[ii].tv.tv_usec/1000000.0));
+			double time_pch2 = (double)store[ii].timestamp/(double)NUM_NANO_PER_SECOND;	
+			fprintf(handle,"%lf,",time_pch1);
+			fprintf(handle,"%lf,",time_pch2);
+			fprintf(handle,"%u\n",store[ii].tcp_seq);
+		}
+		i = (i+1);
  		ii = (ii+1)%HOLD_TIME;
  	}
  /***************************/
@@ -770,6 +716,7 @@ printf("in the write_frequent_update_delay file!\n");
   snprintf(update_filename,
            FILENAME_MAX,
            FREQUENT_UPDATE_FILENAME,
+           mac,
            mac,
            1,
            frequent_sequence_number);
