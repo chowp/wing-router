@@ -638,7 +638,6 @@ void update_list(struct inf_info *inf,int NUMBER, unsigned char mac1[], unsigned
 static int write_frequent_update_delay() {
   //printf("Writing frequent log to %s\n", PENDING_FREQUENT_UPDATE_FILENAME);
   FILE* handle = fopen(PENDING_FREQUENT_UPDATE_FILENAME_DELAY, "w");
-printf("in the write_frequent_update_delay file!\n"); 
   if (!handle) {
     perror("Could not open update file for writing\n");
     exit(1);
@@ -646,7 +645,7 @@ printf("in the write_frequent_update_delay file!\n");
  	int rounds =(rpp - start_pointer + HOLD_TIME )%HOLD_TIME;
  	int i = 0;
  	int ii = start_pointer;
- 	printf("from %d to %d, rounds is %d\n",start_pointer,rpp,rounds);
+ 	//printf("from %d to %d, rounds is %d\n",start_pointer,rpp,rounds);
  	while(i < rounds )
  	{
  		if((store[ii].wlan_type == (u16)136) && 
@@ -654,7 +653,6 @@ printf("in the write_frequent_update_delay file!\n");
  		{
  			double time_pch1 = (double)((double)store[ii].tv.tv_sec + (double)((double)store[ii].tv.tv_usec/1000000.0));
 			double time_pch2 = (double)store[ii].timestamp/(double)NUM_NANO_PER_SECOND;	
-			printf("%lf,%d,%s,%s,%u\n",time_pch1,ii,ether_sprintf(store[ii].wlan_src),ether_sprintf2(store[ii].wlan_dst),store[ii].tcp_seq);
 			
 			fprintf(handle,"%lf,",time_pch1);
 			fprintf(handle,"%lf,",time_pch2);
@@ -919,7 +917,6 @@ static void process_packet(
 	if ((inf_end_timestamp - delay_start_timestamp) > FREQUENT_UPDATE_DELAY_SECONDS)
 	{
 		/*print out*/
-		printf("begin print...\n");
 		write_frequent_update_delay(); /*write the delay into the file*/
 		delay_start_timestamp = inf_end_timestamp;
 	}
