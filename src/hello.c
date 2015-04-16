@@ -650,7 +650,7 @@ printf("in the write_frequent_update_delay file!\n");
  	while(i < rounds )
  	{
  		if((store[ii].wlan_type == (u16)136) && 
- 		  (str_equal(mac,ether_sprintf(p.wlan_src),2*MAC_LEN) == 1) )
+ 		  (str_equal(mac,ether_sprintf(store[ii].wlan_src),2*MAC_LEN) == 1) )
  		{
 			double time_pch1 = (double)((double)store[ii].tv.tv_sec + (double)((double)store[ii].tv.tv_usec/1000000.0));
 			double time_pch2 = (double)store[ii].timestamp/(double)NUM_NANO_PER_SECOND;	
