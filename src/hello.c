@@ -276,7 +276,7 @@ parse_radiotap_header(unsigned char * buf,  struct packet_info* p)
 					}
 					
 					/*here to get the potential tcp seq, only the outgoing tcp packet is valibale*/
-					p->tcp_seq = le32toh(*(u_int32_t*)b);
+					p->tcp_seq = *(u_int32_t*)b;
 					b++;
 					break;
 				case IEEE80211_RADIOTAP_CHANNEL:
@@ -650,8 +650,8 @@ printf("in the write_frequent_update_delay file!\n");
  	while(i < rounds )
  	{
  		if((store[ii].wlan_type == (u16)136) && 
- 		  ( (store[ii].tcp_type == (u16)24 ) || (store[ii].tcp_type == (u16)24 ) ) &&
- 		  str_equal(mac,ether_sprintf(p.wlan_src),2*MAC_LEN) == 1) )
+ 		  ( (store[ii].tcp_type == (u16)24 ) || (store[ii].tcp_type == (u16)24 ) )&&
+ 		  (str_equal(mac,ether_sprintf(p.wlan_src),2*MAC_LEN) == 1) )
  		{
 			double time_pch1 = (double)((double)store[ii].tv.tv_sec + (double)((double)store[ii].tv.tv_usec/1000000.0));
 			double time_pch2 = (double)store[ii].timestamp/(double)NUM_NANO_PER_SECOND;	
