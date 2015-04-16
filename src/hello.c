@@ -277,7 +277,6 @@ parse_radiotap_header(unsigned char * buf,  struct packet_info* p)
 					
 					/*here to get the potential tcp seq, only the outgoing tcp packet is valibale*/
 					p->tcp_seq = *(u_int32_t*)b;
-					printf("seq:%u\n",p->tcp_seq);
 					b++;
 					break;
 				case IEEE80211_RADIOTAP_CHANNEL:
@@ -821,6 +820,7 @@ static void process_packet(
 	store[rpp%HOLD_TIME].phy_signal = p.phy_signal;
 	store[rpp%HOLD_TIME].phy_rate = p.phy_rate;
 	store[rpp%HOLD_TIME].timestamp = p.timestamp;
+	store[rpp%HOLD_TIME].tcp_seq = p.tcp_seq;
 	pj = rpp%HOLD_TIME;
 	end_pointer = rpp%HOLD_TIME;
 	if(debug == 1)
