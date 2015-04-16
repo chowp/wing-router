@@ -791,6 +791,7 @@ static void write_frequent_update() {
            FILENAME_MAX,
            FREQUENT_UPDATE_FILENAME,
            mac,
+           mac,
            nb->start_timeval.tv_sec,
            frequent_sequence_number);
   if (rename(PENDING_FREQUENT_UPDATE_FILENAME, update_filename)) {
