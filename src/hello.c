@@ -196,7 +196,7 @@ parse_radiotap_header(unsigned char * buf,  struct packet_info* p)
 	u16 rt_len, x;
 	unsigned char known, flags, ht20, lgi;
 
-	
+		
 
 
 	rh = (struct ieee80211_radiotap_header*)buf;
@@ -275,6 +275,8 @@ parse_radiotap_header(unsigned char * buf,  struct packet_info* p)
 						
 					}
 					
+					/*here to get the potential tcp seq, only the outgoing tcp packet is valibale*/
+					p->tcp_seq = le32toh(*(u_int32_t*)b);
 					b++;
 					break;
 				case IEEE80211_RADIOTAP_CHANNEL:
@@ -479,37 +481,9 @@ int parse_80211_header(const unsigned char * buf,  struct packet_info* p)
 
 }
 
-int parse_tcp_header(const unsigned char *buf, struct packet_info* p,int left_len)
-{
-	/* data */
-	struct tcphdr* th;
-//	if (len > 0 && (size_t)len < sizeof(struct tcphdr))
-//		return -1;
-	th = (struct tcphdr*)buf;
-	p->tcp_seq = ntohl(th->seq);
-	p->tcp_ack = ntohl(th->ack_seq);
-	int tcplen = 4*th->doff; /*tcp header len*/
-	p->tcp_next_seq = p->tcp_seq + left_len - tcplen;
-	
-	printf("seq=%u,ack=%u,nex_seq=%u",p->tcp_seq,p->tcp_ack,p->tcp_next_seq);
-	printf("tcplen=%d,left_len=%d\n",tcplen,left_len);
-	if ((th->ack == 1) && (left_len == tcplen) )
-	{
-		p->tcp_type = TCP_ACK;
-		return TCP_ACK;
-	}
-	else
-	{ 
-		p->tcp_type = TCP_NON_ACK;
-		return TCP_NON_ACK;
-	}
-
-}
 /* return 1 if we parsed enough = min ieee header */
 int parse_packet(const unsigned char *buf,  struct packet_info* p)
 {
-	
-	
 	
 	int radio = parse_radiotap_header(buf,p);
 
@@ -519,28 +493,7 @@ int parse_packet(const unsigned char *buf,  struct packet_info* p)
 	
 	int llc = 8;
 	
-	
-	//tcp-header
-	if((hdr == 26) || (hdr == 24)) //(Qos Data or DATA )&& TCP
-	{
-		u8 *raw = (u8 *)(buf+radio+hdr+8);
-		if(((*raw) & 0x60) == 0x40){
-			struct ip* ih;
-			ih = (struct ip*)(buf+radio+hdr+8);
-			int ipl = ih->ip_hl*4;
-			
-			p->tcp_offset = radio + hdr + llc + ipl;
-			int left_len = p->len - hdr -llc - ipl;
-			parse_tcp_header(buf+p->tcp_offset,p,left_len);
-		}else{
-			p->tcp_offset = radio + hdr + llc + IPV6; //ipv6
-			/*need to be continue...*/
-		}
-	}
-	
-	if(hdr == 34) /*protected*/
-		p->tcp_offset = radio + 34;
-	
+	p->tcp_type = hdr;
 	
 	return 0;
 }
@@ -696,7 +649,10 @@ printf("in the write_frequent_update_delay file!\n");
  	printf("from %d to %d, rounds is %d\n",start_pointer,rpp,rounds);
  	while(i < rounds )
  	{
- 		if(p.wlan_type == (u16)136){
+ 		if((store[ii].wlan_type == (u16)136) && 
+ 		  ( (store[ii].tcp_type == (u16)24 ) || (store[ii].tcp_type == (u16)24 ) ) &&
+ 		  str_equal(mac,ether_sprintf(p.wlan_src),2*MAC_LEN) == 1) )
+ 		{
 			double time_pch1 = (double)((double)store[ii].tv.tv_sec + (double)((double)store[ii].tv.tv_usec/1000000.0));
 			double time_pch2 = (double)store[ii].timestamp/(double)NUM_NANO_PER_SECOND;	
 			fprintf(handle,"%lf,",time_pch1);
