@@ -276,7 +276,7 @@ parse_radiotap_header(unsigned char * buf,  struct packet_info* p)
 					}
 					
 					/*here to get the potential tcp seq, only the outgoing tcp packet is valibale*/
-					p->tcp_seq = *(u_int32_t*)b;
+					p->tcp_seq = le32toh(*(u_int32_t*)b);
 					b++;
 					break;
 				case IEEE80211_RADIOTAP_CHANNEL:
