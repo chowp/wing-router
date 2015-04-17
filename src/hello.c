@@ -38,7 +38,8 @@ sigset_t block_set;
 #define PENDING_FREQUENT_UPDATE_FILENAME "/tmp/wifiunion-passive/current-frequent-update"
 #define PENDING_FREQUENT_UPDATE_FILENAME_DELAY "/tmp/wifiunion-passive/current-frequent-update-delay"
 #define UPDATE_FILENAME "/tmp/wifiunion-uploads/%s/passive/%s-%" PRIu64 "-%d.gz"
-#define FREQUENT_UPDATE_FILENAME "/tmp/wifiunion-uploads/%s/passive-frequent/%s-%d-%d"
+#define FREQUENT_UPDATE_FILENAME "/tmp/wifiunion-uploads/%s/inf_data/%s-%d-%d"
+#define FREQUENT_UPDATE_FILENAME_DELAY "/tmp/wifiunion-uploads/%s/delay_data/%s-%d-%d"
 #define UPLOAD_FAILURES_FILENAME "/tmp/wifiunion-data-transmit-failures.log"
 //#define FREQUENT_UPDATE_PERIOD_SECONDS 30
 #define NUM_MICROS_PER_SECOND 1e6
@@ -670,7 +671,7 @@ static int write_frequent_update_delay() {
   char update_filename[FILENAME_MAX];
   snprintf(update_filename,
            FILENAME_MAX,
-           FREQUENT_UPDATE_FILENAME,
+           FREQUENT_UPDATE_FILENAME_DELAY,
            mac,
            mac,
            1,
