@@ -646,7 +646,7 @@ static int write_frequent_update_delay() {
  	int rounds =(rpp - start_pointer + HOLD_TIME )%HOLD_TIME;
  	int i = 0;
  	int ii = start_pointer;
- 	//printf("from %d to %d, rounds is %d\n",start_pointer,rpp,rounds);
+ 	printf("from %d to %d, rounds is %d\n",start_pointer,rpp,rounds);
  	while(i < rounds )
  	{
  		if((store[ii].wlan_type == (u16)136) && 
