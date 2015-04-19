@@ -650,7 +650,6 @@ static int write_frequent_update_delay() {
  	printf("from %d to %d, rounds is %d\n",start_pointer,rpp,rounds);
  	while(i < rounds )
  	{
- 		printf("ii is %d\n",ii);
  		if((store[ii].wlan_type == (u16)136) && 
  		  (str_equal(mac,ether_sprintf(store[ii].wlan_src),2*MAC_LEN) == 1) )
  		{
