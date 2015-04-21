@@ -671,13 +671,14 @@ static int write_frequent_update_delay() {
 	printf("unlock and fileclose is good!\n");
 	}
 /*****************************/
+  int file_time = (int)inf_end_timestamp;
   char update_filename[FILENAME_MAX];
   snprintf(update_filename,
            FILENAME_MAX,
            FREQUENT_UPDATE_FILENAME_DELAY,
            mac,
            mac,
-           1,
+           file_time,
            frequent_sequence_number);
   if (rename(PENDING_FREQUENT_UPDATE_FILENAME_DELAY, update_filename)) {
     perror("Could not stage update");
@@ -745,13 +746,14 @@ static void write_frequent_update() {
 	printf("unlock and fileclose is good!\n");
 	}
 /*****************************/
+	int file_time = (int)inf_end_timestamp;
   char update_filename[FILENAME_MAX];
   snprintf(update_filename,
            FILENAME_MAX,
            FREQUENT_UPDATE_FILENAME,
            mac,
            mac,
-           nb->start_timeval.tv_sec,
+           file_time,
            frequent_sequence_number);
   if (rename(PENDING_FREQUENT_UPDATE_FILENAME, update_filename)) {
     perror("Could not stage update");
