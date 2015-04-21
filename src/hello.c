@@ -657,7 +657,7 @@ static int write_frequent_update_delay() {
 			
 			fprintf(handle,"%lf,",time_pch1);
 			fprintf(handle,"%lf,",time_pch2);
-			fprintf(handle,"%u\n",store[ii].tcp_seq);
+			fprintf(handle,"%u,%u\n",store[ii].tcp_seq,store[ii].tcp_ack);
 		}
 		i = (i+1);
  		ii = (ii+1)%HOLD_TIME;
@@ -826,6 +826,7 @@ static void process_packet(
 	store[rpp%HOLD_TIME].phy_rate = p.phy_rate;
 	store[rpp%HOLD_TIME].timestamp = p.timestamp;
 	store[rpp%HOLD_TIME].tcp_seq = p.tcp_seq;
+	store[rpp%HOLD_TIME].tcp_ack = p.tcp_ack;
 	pj = rpp%HOLD_TIME;
 	end_pointer = rpp%HOLD_TIME;
 	if(debug == 1)
