@@ -250,7 +250,7 @@ parse_radiotap_header(unsigned char * buf,  struct packet_info* p)
 					b++;
 					break;
 				case IEEE80211_RADIOTAP_DBM_ANTSIGNAL:
-					
+					p->tcp_ack = le32toh(*(u_int32_t*)b);
 					p->phy_signal = *(char*)b;
 					b++;
 					break;
