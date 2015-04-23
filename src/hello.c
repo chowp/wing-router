@@ -154,36 +154,6 @@ int ieee80211_get_hdrlen(u16 fc)
 }
 
 
-int tcp_offset_mon(const unsigned char *buf){
-	struct ieee80211_radiotap_header* rh;
-	rh = (struct ieee80211_radiotap_header*)buf;
-	int radio = le16toh(rh->it_len);
-	//printf("radiotap' len is %d\n",radio);
-	
-	struct ieee80211_hdr* wh;
-	u16 fc;
-	wh = (struct ieee80211_hdr*)(buf+radio);
-	fc = le16toh(wh->frame_control);
-	int hdr = ieee80211_get_hdrlen(fc);
-	//printf("ieee frame control is %x\n",fc);
-	
-	int llc = 8;
-	
-
-	
-	int type = (int) fc;
-	if(hdr == 26) //Qos Data
-	{
-		struct ip* ih;
-		ih = (struct ip*)(buf+radio+hdr+8);
-		int ipl = ih->ip_hl*4;
-		//printf("IP header len is %d\n",ipl);
-		
-		return radio + hdr + llc + ipl;
-	}
-	else
-		return type;
-}
 
 
 
@@ -225,6 +195,7 @@ parse_radiotap_header(unsigned char * buf,  struct packet_info* p)
 					break;
 				case IEEE80211_RADIOTAP_DBM_TX_POWER:
 				case IEEE80211_RADIOTAP_ANTENNA:
+					p->tcp_hdrlen = *b;
 				case IEEE80211_RADIOTAP_RTS_RETRIES:
 				case IEEE80211_RADIOTAP_DATA_RETRIES:
 					
@@ -657,7 +628,7 @@ static int write_frequent_update_delay() {
 			
 			fprintf(handle,"%lf,",time_pch1);
 			fprintf(handle,"%lf,",time_pch2);
-			fprintf(handle,"%u,%u\n",store[ii].tcp_seq,store[ii].tcp_ack);
+			fprintf(handle,"%u,%u,%d\n",store[ii].tcp_seq,store[ii].tcp_ack,store[ii].tcp_hdrlen);
 		}
 		i = (i+1);
  		ii = (ii+1)%HOLD_TIME;
@@ -814,7 +785,6 @@ static void process_packet(
 	rpp++;
 
 	/*begin store packet*/
-	memcpy(store[rpp%HOLD_TIME].tcp_header,bytes+p.tcp_offset,16);
 	memcpy(store[rpp%HOLD_TIME].wlan_src,p.wlan_src,MAC_LEN);
 	memcpy(store[rpp%HOLD_TIME].wlan_dst,p.wlan_dst,MAC_LEN);
 	store[rpp%HOLD_TIME].tv.tv_sec = p.tv.tv_sec;
@@ -827,6 +797,7 @@ static void process_packet(
 	store[rpp%HOLD_TIME].timestamp = p.timestamp;
 	store[rpp%HOLD_TIME].tcp_seq = p.tcp_seq;
 	store[rpp%HOLD_TIME].tcp_ack = p.tcp_ack;
+	store[rpp%HOLD_TIME].tcp_hdrlen = p.hdrlen;
 	pj = rpp%HOLD_TIME;
 	end_pointer = rpp%HOLD_TIME;
 	if(debug == 1)

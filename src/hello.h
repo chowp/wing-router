@@ -121,7 +121,7 @@ struct packet_info {
 	u16		wlan_type;	/* frame control field */
 	unsigned char		wlan_src[MAC_LEN];
 	unsigned char		wlan_dst[MAC_LEN];
-	int        tcp_offset;
+	int        tcp_hdrlen;
 	int tcp_type;
 	unsigned int tcp_seq;
 	unsigned int tcp_ack;
