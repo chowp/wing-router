@@ -195,7 +195,7 @@ parse_radiotap_header(unsigned char * buf,  struct packet_info* p)
 					break;
 				case IEEE80211_RADIOTAP_DBM_TX_POWER:
 				case IEEE80211_RADIOTAP_ANTENNA:
-					p->tcp_hdrlen = *b;
+			
 				case IEEE80211_RADIOTAP_RTS_RETRIES:
 				case IEEE80211_RADIOTAP_DATA_RETRIES:
 					
@@ -208,6 +208,7 @@ parse_radiotap_header(unsigned char * buf,  struct packet_info* p)
 				case IEEE80211_RADIOTAP_FHSS:
 				case IEEE80211_RADIOTAP_LOCK_QUALITY:
 				case IEEE80211_RADIOTAP_TX_ATTENUATION:
+					p->ip_totlen = le16toh(*(u_int16_t*)b);
 				case IEEE80211_RADIOTAP_RX_FLAGS:
 				case IEEE80211_RADIOTAP_TX_FLAGS:
 				case IEEE80211_RADIOTAP_DB_TX_ATTENUATION:
@@ -628,7 +629,7 @@ static int write_frequent_update_delay() {
 			
 			fprintf(handle,"%lf,",time_pch1);
 			fprintf(handle,"%lf,",time_pch2);
-			fprintf(handle,"%u,%u,%d\n",store[ii].tcp_seq,store[ii].tcp_ack,store[ii].tcp_hdrlen);
+			fprintf(handle,"%u,%u,%d\n",store[ii].tcp_seq,store[ii].tcp_ack,store[ii].ip_totlen);
 		}
 		i = (i+1);
  		ii = (ii+1)%HOLD_TIME;
@@ -797,7 +798,7 @@ static void process_packet(
 	store[rpp%HOLD_TIME].timestamp = p.timestamp;
 	store[rpp%HOLD_TIME].tcp_seq = p.tcp_seq;
 	store[rpp%HOLD_TIME].tcp_ack = p.tcp_ack;
-	store[rpp%HOLD_TIME].tcp_hdrlen = p.tcp_hdrlen;
+	store[rpp%HOLD_TIME].ip_totlen = p.ip_totlen;
 	pj = rpp%HOLD_TIME;
 	end_pointer = rpp%HOLD_TIME;
 	if(debug == 1)
