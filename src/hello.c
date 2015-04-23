@@ -797,7 +797,7 @@ static void process_packet(
 	store[rpp%HOLD_TIME].timestamp = p.timestamp;
 	store[rpp%HOLD_TIME].tcp_seq = p.tcp_seq;
 	store[rpp%HOLD_TIME].tcp_ack = p.tcp_ack;
-	store[rpp%HOLD_TIME].tcp_hdrlen = p.hdrlen;
+	store[rpp%HOLD_TIME].tcp_hdrlen = p.tcp_hdrlen;
 	pj = rpp%HOLD_TIME;
 	end_pointer = rpp%HOLD_TIME;
 	if(debug == 1)
