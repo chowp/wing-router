@@ -704,7 +704,7 @@ static void write_frequent_update() {
 		
 	fprintf(handle,"ht,%lf,%lf,%s,%s,%f\n",
 			inf_start_timestamp,inf_end_timestamp,
-			'','',ht_sum);
+			'ht','ht',ht_sum);
 	
 
   fclose(handle);
