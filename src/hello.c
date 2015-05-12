@@ -702,9 +702,11 @@ static void write_frequent_update() {
 			ether_sprintf(cs[j].wlan_src),ether_sprintf2(cs[j].wlan_dst),cs[j].value);
 	}
 		
-	fprintf(handle,"ht,%lf,%lf,%s,%s,%f\n",
+	if (debug == 1)
+		printf("in the write_frequent_update!\n");
+	fprintf(handle,"ht,%lf,%lf,ht,ht,%f\n",
 			inf_start_timestamp,inf_end_timestamp,
-			'ht','ht',ht_sum);
+			ht_sum);
 	
 
   fclose(handle);
