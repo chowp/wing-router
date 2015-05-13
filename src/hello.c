@@ -845,7 +845,7 @@ static void process_packet(
 			pii  =  (pii + 1)%HOLD_TIME;
 
 			/* point i (pi) step forward, because the neighbor packet lose behind */
-			if (neighbor_timestamp < tw)
+			if (neighbor_timestamp < te)
 				pi = pii;
 
 		}
