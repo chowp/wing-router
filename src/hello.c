@@ -469,8 +469,6 @@ int parse_packet(const unsigned char *buf,  struct packet_info* p)
 	int llc = 8;
 	
 	p->tcp_type = hdr;
-	p->ip_totlen = p->len-hdr -llc ;
-	
 	return 0;
 }
 			  
