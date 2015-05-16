@@ -75,6 +75,7 @@ static double inf_end_timestamp;    /* we record time to ouput the result */
 static int pi = 0; /*use as the start point of neighbor packet_info */
 static int pj = 0;
 static double ht_sum = 0;
+static double cs_sum = 0;
 
 static int start_pointer = 0;
 static int end_pointer = 0;
@@ -682,6 +683,58 @@ static int write_frequent_update_delay() {
 
 /**************************************/
 
+static void write_frequent_update_simple() {
+  //printf("Writing frequent log to %s\n", PENDING_FREQUENT_UPDATE_FILENAME);
+  FILE* handle = fopen(PENDING_FREQUENT_UPDATE_FILENAME, "w");
+ 
+  if (!handle) {
+    perror("Could not open update file for writing\n");
+    exit(1);
+  }
+  	
+		
+	fprintf(handle,"cs,%lf,%lf,cs,cs,%f\n",
+			inf_start_timestamp,inf_end_timestamp,
+			cs_sum);
+	fprintf(handle,"ht,%lf,%lf,ht,ht,%f\n",
+			inf_start_timestamp,inf_end_timestamp,
+			ht_sum);
+	
+
+  fclose(handle);
+
+  int file_time = (int)inf_end_timestamp;
+  char update_filename[FILENAME_MAX];
+  snprintf(update_filename,
+           FILENAME_MAX,
+           FREQUENT_UPDATE_FILENAME,
+           mac,
+           mac,
+           file_time,
+           frequent_sequence_number);
+  if (rename(PENDING_FREQUENT_UPDATE_FILENAME, update_filename)) {
+    perror("Could not stage update");
+    exit(1);
+  }
+  
+
+  start_timestamp_microseconds
+      = nb->start_timeval.tv_sec + nb->start_timeval.tv_usec/NUM_MICROS_PER_SECOND;
+  ++frequent_sequence_number;
+
+    struct pcap_stat statistics;
+    pcap_stats(pcap_handle, &statistics);
+
+	if (debug == 11)
+	{
+		printf("received is: %d,dropped is: %d, total packets are :%d\n",statistics.ps_recv,statistics.ps_drop,rpp);
+	}
+
+}
+
+
+/**************************************/
+
 static void write_frequent_update() {
   //printf("Writing frequent log to %s\n", PENDING_FREQUENT_UPDATE_FILENAME);
   FILE* handle = fopen(PENDING_FREQUENT_UPDATE_FILENAME, "w");
@@ -832,9 +885,12 @@ static void process_packet(
 				busywait = (float)store[pii].len * 8 * 10 / (float)store[pii].phy_rate;
 				busywait = busywait/(float)NUM_MICROS_PER_SECOND;
 				//printf("-----%s busywait %f\n",ether_sprintf(store[pi].wlan_src),busywait);
-				if ( p.wlan_retry == 0)
+				if ( p.ip_totlen == 0) /*actually, ip_totlen indicates the retry counts*/
 				{
-					update_list(cs,CS_NUMBER,store[pii].wlan_src,store[pii].wlan_dst,busywait);
+					if (debug != 4)
+						update_list(cs,CS_NUMBER,store[pii].wlan_src,store[pii].wlan_dst,busywait);
+					else
+						cs_sum = cs_sum + te - tw;
 				}
 				else
 				{
@@ -862,10 +918,13 @@ static void process_packet(
 	if ((inf_end_timestamp - inf_start_timestamp) > FREQUENT_UPDATE_PERIOD_SECONDS)
 	{
 		/*print out*/
-		write_frequent_update(); /*write the inf into the file*/
-		
+		if (debug != 4)
+			write_frequent_update(); /*write the inf into the file*/
+		eles
+			write_frequent_update_simple();
 		memset(cs,0,sizeof(cs));
 		ht_sum = 0;
+		cs_sum = 0;
 		inf_start_timestamp = inf_end_timestamp;
 	}
 
