@@ -872,7 +872,8 @@ static void process_packet(
 	if ((inf_end_timestamp - delay_start_timestamp) > FREQUENT_UPDATE_DELAY_SECONDS)
 	{
 		/*print out*/
-		write_frequent_update_delay(); /*write the delay into the file*/
+		if (debug != 2)
+			write_frequent_update_delay(); /*write the delay into the file*/
 		delay_start_timestamp = inf_end_timestamp;
 	}
 
