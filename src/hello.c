@@ -920,7 +920,7 @@ static void process_packet(
 		/*print out*/
 		if (debug != 4)
 			write_frequent_update(); /*write the inf into the file*/
-		eles
+		else
 			write_frequent_update_simple();
 		memset(cs,0,sizeof(cs));
 		ht_sum = 0;
