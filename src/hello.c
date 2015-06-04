@@ -629,7 +629,8 @@ static int write_frequent_update_delay() {
 			
 			fprintf(handle,"%lf,",time_pch1);
 			fprintf(handle,"%lf,",time_pch2);
-			fprintf(handle,"%u,%u,%d\n",store[ii].tcp_seq,store[ii].tcp_ack,store[ii].ip_totlen);
+			fprintf(handle,"%u,%u,%d",store[ii].tcp_seq,store[ii].tcp_ack,store[ii].ip_totlen);
+			fprintf(handle,"%s,%s\n",ether_sprintf(store[ii].wlan_src),ether_sprintf2(store[ii].wlan_dst));
 		}
 		i = (i+1);
  		ii = (ii+1)%HOLD_TIME;
