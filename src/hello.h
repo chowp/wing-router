@@ -10,7 +10,7 @@
 #define AP2C_ACK 2
 
 #define MAC_LEN			6
-#define HOLD_TIME       10000
+#define HOLD_TIME       1000
 #define CS_NUMBER       200
 #define HT_NUMBER       100
 #define PRINT_INTERVAL  20 /*20 seconds*/
