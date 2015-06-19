@@ -74,6 +74,8 @@ static double delay_start_timestamp;
 static double inf_end_timestamp;    /* we record time to ouput the result */
 static int pi = 0; /*use as the start point of neighbor packet_info */
 static int pj = 0;
+static double ht_sum = 0;
+static double cs_sum = 0;
 
 static int start_pointer = 0;
 static int end_pointer = 0;
@@ -467,7 +469,6 @@ int parse_packet(const unsigned char *buf,  struct packet_info* p)
 	int llc = 8;
 	
 	p->tcp_type = hdr;
-	
 	return 0;
 }
 			  
@@ -577,13 +578,12 @@ void update_list(struct inf_info *inf,int NUMBER, unsigned char mac1[], unsigned
 	
 	}
 
-	/* i don't want oneof the "00000000000" to be the index of inf*/
+	/* i don't want oneof the "00000000000" or "FFFFFFFFFFFF"to be the index of inf*/
 	if (
 		(str_equal(mac_zero,ether_sprintf(mac1),2*MAC_LEN) == 1)
 	||  (str_equal(mac_zero,ether_sprintf2(mac2),2*MAC_LEN) == 1)
 	||  (str_equal(mac_ffff,ether_sprintf(mac1),2*MAC_LEN) == 1)
-	||	(str_equal(mac_ffff,ether_sprintf(mac2),2*MAC_LEN) == 1)
-				 
+	||	(str_equal(mac_ffff,ether_sprintf2(mac2),2*MAC_LEN) == 1)				 
 		)
 	{
 		//printf("either 00000 or FFFFF !! return\n");
@@ -629,7 +629,8 @@ static int write_frequent_update_delay() {
 			
 			fprintf(handle,"%lf,",time_pch1);
 			fprintf(handle,"%lf,",time_pch2);
-			fprintf(handle,"%u,%u,%d\n",store[ii].tcp_seq,store[ii].tcp_ack,store[ii].ip_totlen);
+			fprintf(handle,"%u,%u,%d,",store[ii].tcp_seq,store[ii].tcp_ack,store[ii].ip_totlen);
+			fprintf(handle,"%s,%s\n",ether_sprintf(store[ii].wlan_src),ether_sprintf2(store[ii].wlan_dst));
 		}
 		i = (i+1);
  		ii = (ii+1)%HOLD_TIME;
@@ -681,6 +682,58 @@ static int write_frequent_update_delay() {
 
 /**************************************/
 
+static void write_frequent_update_simple() {
+  //printf("Writing frequent log to %s\n", PENDING_FREQUENT_UPDATE_FILENAME);
+  FILE* handle = fopen(PENDING_FREQUENT_UPDATE_FILENAME, "w");
+ 
+  if (!handle) {
+    perror("Could not open update file for writing\n");
+    exit(1);
+  }
+  	
+		
+	fprintf(handle,"cs,%lf,%lf,cs,cs,%f\n",
+			inf_start_timestamp,inf_end_timestamp,
+			cs_sum);
+	fprintf(handle,"ht,%lf,%lf,ht,ht,%f\n",
+			inf_start_timestamp,inf_end_timestamp,
+			ht_sum);
+	
+
+  fclose(handle);
+
+  int file_time = (int)inf_end_timestamp;
+  char update_filename[FILENAME_MAX];
+  snprintf(update_filename,
+           FILENAME_MAX,
+           FREQUENT_UPDATE_FILENAME,
+           mac,
+           mac,
+           file_time,
+           frequent_sequence_number);
+  if (rename(PENDING_FREQUENT_UPDATE_FILENAME, update_filename)) {
+    perror("Could not stage update");
+    exit(1);
+  }
+  
+
+  start_timestamp_microseconds
+      = nb->start_timeval.tv_sec + nb->start_timeval.tv_usec/NUM_MICROS_PER_SECOND;
+  ++frequent_sequence_number;
+
+    struct pcap_stat statistics;
+    pcap_stats(pcap_handle, &statistics);
+
+	if (debug == 11)
+	{
+		printf("received is: %d,dropped is: %d, total packets are :%d\n",statistics.ps_recv,statistics.ps_drop,rpp);
+	}
+
+}
+
+
+/**************************************/
+
 static void write_frequent_update() {
   //printf("Writing frequent log to %s\n", PENDING_FREQUENT_UPDATE_FILENAME);
   FILE* handle = fopen(PENDING_FREQUENT_UPDATE_FILENAME, "w");
@@ -702,23 +755,16 @@ static void write_frequent_update() {
 			ether_sprintf(cs[j].wlan_src),ether_sprintf2(cs[j].wlan_dst),cs[j].value);
 	}
 		
-	for (j = 0 ; j < HT_NUMBER ;j ++)
-	{
-		if (ht[j].value == 0)
-			break;
-		fprintf(handle,"ht,%lf,%lf,%s,%s,%f\n",
+	if (debug == 1)
+		printf("in the write_frequent_update!\n");
+	fprintf(handle,"ht,%lf,%lf,ht,ht,%f\n",
 			inf_start_timestamp,inf_end_timestamp,
-			ether_sprintf(ht[j].wlan_src),ether_sprintf2(ht[j].wlan_dst),ht[j].value);
-	}
+			ht_sum);
+	
 
   fclose(handle);
- /***************************/
-	if(debug == 1)
-	{
-	printf("unlock and fileclose is good!\n");
-	}
-/*****************************/
-	int file_time = (int)inf_end_timestamp;
+
+  int file_time = (int)inf_end_timestamp;
   char update_filename[FILENAME_MAX];
   snprintf(update_filename,
            FILENAME_MAX,
@@ -732,12 +778,6 @@ static void write_frequent_update() {
     exit(1);
   }
   
- /************************/
-	if(debug == 1)
-	{
-	printf("rename is good!\n");
-	}
-/*************************/
 
   start_timestamp_microseconds
       = nb->start_timeval.tv_sec + nb->start_timeval.tv_usec/NUM_MICROS_PER_SECOND;
@@ -764,21 +804,15 @@ static void process_packet(
  //   exit(1);
  // }
 
-//	int i = 0;
+
 	float busywait = 0;
-  ++rp;
-	//if(debug == 1)
-	//	printf("receive %d packets\n",rp);
+    ++rp;
+
 
 	memset(&p, 0, sizeof(p));
 	p.len = header->len;
 	parse_packet(bytes,&p);
 	
-	//fiter
-	//if((str_equal(mac,ether_sprintf(p.wlan_src),2*MAC_LEN) != 1))
-	//{
-	//	return;
-	//}
 
 
 	p.tv.tv_sec = header->ts.tv_sec;
@@ -815,7 +849,6 @@ static void process_packet(
 		double tw = p.tv.tv_sec + (double)p.tv.tv_usec/(double)NUM_MICROS_PER_SECOND;
 		double te = (double)p.timestamp/(double)NUM_NANO_PER_SECOND;
 		
-
 		if(debug == 1)
 			printf("\n-----[tw,te]:[%f,%f]\n",tw,te);
 		double neighbor_timestamp = (double)store[pi].timestamp/(double)NUM_NANO_PER_SECOND;	
@@ -840,18 +873,27 @@ static void process_packet(
 				continue;
 			}
 
+			if((str_equal(mac,ether_sprintf2(store[pii].wlan_src),2*MAC_LEN) == 1))
+			{
+				pii  =  (pii + 1)%HOLD_TIME;
+				continue;
+			}
+
 			if ( ( neighbor_timestamp > tw ) && ( neighbor_timestamp < te) ) 
 			{
 				busywait = (float)store[pii].len * 8 * 10 / (float)store[pii].phy_rate;
 				busywait = busywait/(float)NUM_MICROS_PER_SECOND;
 				//printf("-----%s busywait %f\n",ether_sprintf(store[pi].wlan_src),busywait);
-				if ( p.wlan_retry == 0)
+				if ( p.ip_totlen == 0) /*actually, ip_totlen indicates the retry counts*/
 				{
-					update_list(cs,CS_NUMBER,store[pii].wlan_src,store[pii].wlan_dst,busywait);
+					if (debug != 4)
+						update_list(cs,CS_NUMBER,store[pii].wlan_src,store[pii].wlan_dst,busywait);
+					else
+						cs_sum = cs_sum + te - tw;
 				}
 				else
 				{
-					update_list(ht_tmp,HT_NUMBER,store[pii].wlan_src,store[pii].wlan_dst,busywait); /* need to further update the hidden terminal*/
+					ht_sum = ht_sum + te - tw;//update_list(ht_tmp,HT_NUMBER,store[pii].wlan_src,store[pii].wlan_dst,busywait); /* need to further update the hidden terminal*/
 				}					
 
 			}
@@ -859,22 +901,12 @@ static void process_packet(
 			pii  =  (pii + 1)%HOLD_TIME;
 
 			/* point i (pi) step forward, because the neighbor packet lose behind */
-			if (neighbor_timestamp < tw)
+			if (neighbor_timestamp < te)
 				pi = pii;
 
 		}
 
-		int j = 0;
-		float sum = 0.0;
-		for(j =0 ; j < HT_NUMBER ; j ++)
-		{
-			sum = sum + ht_tmp[j].value;
-		}
-		for(j =0 ; j < HT_NUMBER ; j ++)
-		{
-			if (ht_tmp[j].value != 0 )
-				update_list(ht,HT_NUMBER,ht_tmp[j].wlan_src,store[pi].wlan_dst,(float)(te-tw)*(ht_tmp[j].value/(float)sum) );
-		}
+
 		memset(ht_tmp,0,sizeof(ht_tmp));
 		
 			
@@ -885,18 +917,21 @@ static void process_packet(
 	if ((inf_end_timestamp - inf_start_timestamp) > FREQUENT_UPDATE_PERIOD_SECONDS)
 	{
 		/*print out*/
-		write_frequent_update(); /*write the inf into the file*/
-		
+		if (debug != 4)
+			write_frequent_update(); /*write the inf into the file*/
+		else
+			write_frequent_update_simple();
 		memset(cs,0,sizeof(cs));
-		memset(ht,0,sizeof(ht));
-		memset(ht_tmp,0,sizeof(ht_tmp));
+		ht_sum = 0;
+		cs_sum = 0;
 		inf_start_timestamp = inf_end_timestamp;
 	}
 
 	if ((inf_end_timestamp - delay_start_timestamp) > FREQUENT_UPDATE_DELAY_SECONDS)
 	{
 		/*print out*/
-		write_frequent_update_delay(); /*write the delay into the file*/
+		if (debug != 2)
+			write_frequent_update_delay(); /*write the delay into the file*/
 		delay_start_timestamp = inf_end_timestamp;
 	}
 
