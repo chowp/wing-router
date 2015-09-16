@@ -621,9 +621,10 @@ static int write_frequent_update_delay() {
  	int ii = (start_pointer+1)%HOLD_TIME;
  	while(i < rounds )
  	{
- 		if((store[ii].wlan_type == (u16)136) && 
- 		  (str_equal(mac,ether_sprintf(store[ii].wlan_src),2*MAC_LEN) == 1) )
- 		{
+ 		// comment : 2015-9-15, output all the packets, including neighbors'
+ 		// if((store[ii].wlan_type == (u16)136) && 
+ 		//   (str_equal(mac,ether_sprintf(store[ii].wlan_src),2*MAC_LEN) == 1) )
+ 		// {
  			double time_pch1 = (double)((double)store[ii].tv.tv_sec + (double)((double)store[ii].tv.tv_usec/1000000.0));
 			double time_pch2 = (double)store[ii].timestamp/(double)NUM_NANO_PER_SECOND;	
 			
@@ -631,7 +632,7 @@ static int write_frequent_update_delay() {
 			fprintf(handle,"%lf,",time_pch2);
 			fprintf(handle,"%u,%d,",store[ii].phy_rate,store[ii].len);
 			fprintf(handle,"%s,%s\n",ether_sprintf(store[ii].wlan_src),ether_sprintf2(store[ii].wlan_dst));
-		}
+		//}
 		i = (i+1);
  		ii = (ii+1)%HOLD_TIME;
  	}
