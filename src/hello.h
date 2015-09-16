@@ -122,6 +122,9 @@ struct packet_info {
 	unsigned char		wlan_src[MAC_LEN];
 	unsigned char		wlan_dst[MAC_LEN];
 	int        ip_totlen;
+	unsigned short int ip_id;
+	unsigned short int ip_off;
+	unsigned short int ip_off;
 	int tcp_type;
 	unsigned int tcp_seq;
 	unsigned int tcp_ack;
