@@ -639,25 +639,25 @@ static int write_frequent_update_delay() {
  	if(debug == -1)
  		printf("from %d to %d, rounds is %d,last is %d\n",start_pointer,end_pointer,rounds,ii-1);
  
- /***************************/
-	if(debug == 1)
-	{
-	printf("unlock and fileclose is good!\n");
-	}
-/*****************************/
-  int file_time = (int)inf_end_timestamp;
-  char update_filename[FILENAME_MAX];
-  snprintf(update_filename,
-           FILENAME_MAX,
-           FREQUENT_UPDATE_FILENAME_DELAY,
-           mac,
-           mac,
-           file_time,
-           frequent_sequence_number);
-  if (rename(PENDING_FREQUENT_UPDATE_FILENAME_DELAY, update_filename)) {
-    perror("Could not stage update");
-    exit(1);
-  }
+ 	// print loss rate
+  	struct pcap_stat statistics;
+    pcap_stats(pcap_handle, &statistics);
+	fprintf(handle,"received is: %d,dropped is: %d, total packets are :%d\n",statistics.ps_recv,statistics.ps_drop,rpp);
+
+
+	  int file_time = (int)inf_end_timestamp;
+	  char update_filename[FILENAME_MAX];
+	  snprintf(update_filename,
+	           FILENAME_MAX,
+	           FREQUENT_UPDATE_FILENAME_DELAY,
+	           mac,
+	           mac,
+	           file_time,
+	           frequent_sequence_number);
+	  if (rename(PENDING_FREQUENT_UPDATE_FILENAME_DELAY, update_filename)) {
+	    perror("Could not stage update");
+	    exit(1);
+	  }
   
  /************************/
 	if(debug == 1)
@@ -670,9 +670,7 @@ static int write_frequent_update_delay() {
       = nb->start_timeval.tv_sec + nb->start_timeval.tv_usec/NUM_MICROS_PER_SECOND;
   ++frequent_sequence_number;
 
-    struct pcap_stat statistics;
-    pcap_stats(pcap_handle, &statistics);
-	printf("received is: %d,dropped is: %d, total packets are :%d\n",statistics.ps_recv,statistics.ps_drop,rpp);
+    
 	start_pointer = rpp%HOLD_TIME;
 }
 
