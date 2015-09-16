@@ -644,6 +644,7 @@ static int write_frequent_update_delay() {
     pcap_stats(pcap_handle, &statistics);
 	fprintf(handle,"received is: %d,dropped is: %d, total packets are :%d\n",statistics.ps_recv,statistics.ps_drop,rpp);
 
+	fclose(handle);
 
 	  int file_time = (int)inf_end_timestamp;
 	  char update_filename[FILENAME_MAX];
