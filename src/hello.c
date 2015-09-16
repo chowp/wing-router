@@ -672,11 +672,7 @@ static int write_frequent_update_delay() {
 
     struct pcap_stat statistics;
     pcap_stats(pcap_handle, &statistics);
-
-	if (debug == 11)
-	{
-		printf("received is: %d,dropped is: %d, total packets are :%d\n",statistics.ps_recv,statistics.ps_drop,rpp);
-	}
+	printf("received is: %d,dropped is: %d, total packets are :%d\n",statistics.ps_recv,statistics.ps_drop,rpp);
 	start_pointer = rpp%HOLD_TIME;
 }
 
