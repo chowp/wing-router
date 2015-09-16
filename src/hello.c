@@ -486,8 +486,8 @@ int parse_ip_packet(const unsigned char *buf,  struct packet_info* p)
 		p->ip_off = ntohs(ih->ip_off);
 		
 	}else{
-		p->tcp_offset = 14 + IPV6; //ipv6
-		/*need to be continue...*/
+		
+		/*ipv6, do nothing, need to be continue...*/
 	}
 	return 0;
 }
