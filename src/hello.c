@@ -917,10 +917,12 @@ static void process_packet(
 	if ((inf_end_timestamp - inf_start_timestamp) > FREQUENT_UPDATE_PERIOD_SECONDS)
 	{
 		/*print out*/
+		/* we currently output the packet detail, not interference 
 		if (debug != 4)
-			write_frequent_update(); /*write the inf into the file*/
+			write_frequent_update(); 
 		else
 			write_frequent_update_simple();
+		*/
 		memset(cs,0,sizeof(cs));
 		ht_sum = 0;
 		cs_sum = 0;
