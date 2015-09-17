@@ -467,9 +467,8 @@ int parse_packet(const unsigned char *buf,  struct packet_info* p)
 	int hdr = parse_80211_header(buf+radio,p);
 	
 	int llc = 8; /**/
-	
 	parse_ip_packet(buf+radio+hdr+llc,p);
-
+	p->ip_totlen = radio+hdr+llc;
 	p->tcp_type = hdr;
 	return 0;
 }
@@ -650,7 +649,7 @@ static int write_frequent_update_delay() {
 			
 			fprintf(handle,"%lf,",time_pch1);
 			fprintf(handle,"%lf,",time_pch2);
-			fprintf(handle,"%u,%d,%u,%u,",store[ii].phy_rate,store[ii].len,store[ii].ip_id,store[ii].ip_off);
+			fprintf(handle,"%u,%d,%u,%u,%d,",store[ii].phy_rate,store[ii].len,store[ii].ip_id,store[ii].ip_off,store[ii].ip_totlen);
 			fprintf(handle,"%s,%s\n",ether_sprintf(store[ii].wlan_src),ether_sprintf2(store[ii].wlan_dst));
 		//}
 		i = (i+1);
@@ -846,7 +845,7 @@ static void process_packet(
 	store[rpp%HOLD_TIME].phy_signal = p.phy_signal;
 	store[rpp%HOLD_TIME].phy_rate = p.phy_rate;
 	store[rpp%HOLD_TIME].timestamp = p.timestamp;
-	store[rpp%HOLD_TIME].tcp_seq = p.tcp_seq;
+	store[rpp%HOLD_TIME].ip_totlen = p.ip_totlen;
 	store[rpp%HOLD_TIME].tcp_ack = p.tcp_ack;
 	store[rpp%HOLD_TIME].ip_id = p.ip_id;
 	pj = rpp%HOLD_TIME;
