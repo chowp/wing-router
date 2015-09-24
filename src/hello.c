@@ -363,11 +363,14 @@ static void process_packet(
 	}
 	
 	
-	if( (p.wlan_type == (u16)136) && (str_equal(mac,ether_sprintf(p.wlan_src),2*MAC_LEN) == 1)){ /*trigger calculation*/
+	if( ( (p.wlan_type == (u16)136) || (p.wlan_type == (u16)8) )
+	   && (str_equal(mac,ether_sprintf(p.wlan_src),2*MAC_LEN) == 1)){ /*trigger calculation*/
 		double tw = p.tv.tv_sec + (double)p.tv.tv_usec/(double)NUM_MICROS_PER_SECOND;
 		double te = (double)p.timestamp/(double)NUM_NANO_PER_SECOND;
-		last_te = te;
-		
+		double th = last_te;
+		if (tw > last_te){
+			th = tw;
+		}
 		
 		double neighbor_timestamp = store[pi].tv.tv_sec + (double)store[pi].tv.tv_usec/(double)NUM_MICROS_PER_SECOND;
 		
@@ -382,7 +385,7 @@ static void process_packet(
 			
 
 
-			if ( ( neighbor_timestamp > tw ) && ( neighbor_timestamp < te) ) 
+			if ( ( neighbor_timestamp > th ) && ( neighbor_timestamp < te) ) 
 			{
 
 				if((str_equal(mac,ether_sprintf(store[pii].wlan_dst),2*MAC_LEN) == 1) ||
@@ -416,7 +419,7 @@ static void process_packet(
 
 		}
 
-
+		last_te = te;
 		memset(ht_tmp,0,sizeof(ht_tmp));
 		
 			
