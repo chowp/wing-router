@@ -66,6 +66,7 @@ struct packet_info store[HOLD_TIME]; /* used to store packets info, including ne
 struct inf_info cs[CS_NUMBER]; /* used to store cs info in time gamma */
 struct inf_info ht[HT_NUMBER]; /* used to store ht info in time gamma */
 struct inf_info ht_tmp[HT_NUMBER];
+struct summary_info summay;
 static double inf_start_timestamp;
 static double delay_start_timestamp;
 static double inf_end_timestamp;    /* we record time to ouput the result */
@@ -116,8 +117,8 @@ bool non_control_packet(struct inf_info *inf,unsigned char mac1[], unsigned char
 Insert a packet to the carrier sense or hidden teriminal list
 */
 bool update_list(struct inf_info *inf,int NUMBER, unsigned char mac1[], unsigned char mac2[], float value){	
-	if (debug == 1)
-		printf("debug parameter %s+%s:%f\n",ether_sprintf(mac1),ether_sprintf2(mac2),value);
+	if (debug == LOG_DEBUG)
+		printf("neighbor packets width %s+%s:%f\n",ether_sprintf(mac1),ether_sprintf2(mac2),value);
 	//printf("\n*******************************\n");
 
 	int i;
@@ -141,6 +142,7 @@ bool update_list(struct inf_info *inf,int NUMBER, unsigned char mac1[], unsigned
 			memcpy(inf[i].wlan_dst,mac2,MAC_LEN);
 			
 			inf[i].value = value;
+			summay.inf_num = summay.inf_num + 1;
 			//printf("C  %s+%s:%f\n",ether_sprintf(mac1),ether_sprintf2(mac2),inf[i].value);
 			//printf("*******************************\n\n");
 			return; /*pay attention whether it will jump out!*/
@@ -269,6 +271,7 @@ static void write_frequent_print_interference() {
  
   	/*print out*/ 	
 	int j = 0;
+	float overall_busywait = 0;
 	for (j = 0 ; j < CS_NUMBER ;j ++)
 	{
 		if (cs[j].value == 0)
@@ -276,21 +279,27 @@ static void write_frequent_print_interference() {
 		// fprintf(handle,"cs,%lf,%lf,%s,%s,%f\n",
 		// 	inf_start_timestamp,inf_end_timestamp,
 		// 	ether_sprintf(cs[j].wlan_src),ether_sprintf2(cs[j].wlan_dst),cs[j].value);
-		printf("cs,%lf,%lf,%s,%s,%f\n",
-			inf_start_timestamp,inf_end_timestamp,
-			ether_sprintf(cs[j].wlan_src),ether_sprintf2(cs[j].wlan_dst),cs[j].value);
-	
+		overall_busywait = overall_busywait + cs[j].value;
 	}
-		
+	
+	printf("\nCS:");	
+	for(j = 0 ; j < CS_NUMBER ; j ++){
+		cs[j].percentage = 100*cs[j].value/overall_busywait;
+		printf("%d",cs[j].percentage); 
+	}
 
 	// fprintf(handle,"ht,%lf,%lf,ht,ht,%f\n",
 	// 		inf_start_timestamp,inf_end_timestamp,
 	// 		ht_sum);
-	printf("ht,%lf,%lf,ht,ht,%f\n",
+	printf("HT,%lf,%lf,%f\n",
 			inf_start_timestamp,inf_end_timestamp,
 			ht_sum);
   	fclose(handle);
 
+	// print summary info
+	printf("\ninterferers=%f,extra=%f,busywait=%f",summary.inf_num,summary.overall_extra_time,overall_busywait);
+	memset(&summary, 0, sizeof(summary));
+	
   	int file_time = (int)inf_end_timestamp;
   	char update_filename[FILENAME_MAX];
   	snprintf(update_filename,
@@ -377,7 +386,7 @@ static void process_packet(
 		if (tw > last_te){
 			th = tw;
 		}
-		
+		summary.overall_extra_time = summary.overall_extra_time + te - th;
 		double neighbor_timestamp = store[pi].tv.tv_sec + (double)store[pi].tv.tv_usec/(double)NUM_MICROS_PER_SECOND;
 		
 		int pii = pi; /* looking from the very start point */

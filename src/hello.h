@@ -102,6 +102,15 @@ struct inf_info {
 	unsigned char wlan_src[MAC_LEN];
 	unsigned char wlan_dst[MAC_LEN];
 	float  value;
+	float percentage;
+};
+struct summary_info{
+	float inf_packets;
+	float mine_packets;
+	float inf_avg_throughput;
+	float mine_avg_throughput;
+	float overall_extra_time;
+	int inf_num;
 };
 /***************
  store the delay break down info
