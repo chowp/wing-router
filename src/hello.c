@@ -383,15 +383,18 @@ static void process_packet(
 		
 
 			printf("-----[%d/%d]:[%s+%s]:%f<---->%f\n",pii,pj,ether_sprintf(store[pii].wlan_src),ether_sprintf2(store[pii].wlan_dst),neighbor_timestamp,libpcap_timestamp);						
-			if((str_equal(mac,ether_sprintf(store[pii].wlan_dst),2*MAC_LEN) == 1) ||
-			   (str_equal(mac,ether_sprintf2(store[pii].wlan_src),2*MAC_LEN) == 1)) {
-				printf("\n[%f,%f] packet type is %d",tw,te,store[pii].wlan_type);
-				continue;
-			}
+			
 
 
 			if ( ( neighbor_timestamp > tw ) && ( neighbor_timestamp < te) ) 
 			{
+
+				if((str_equal(mac,ether_sprintf(store[pii].wlan_dst),2*MAC_LEN) == 1) ||
+			  	   (str_equal(mac,ether_sprintf2(store[pii].wlan_src),2*MAC_LEN) == 1)) {
+					printf("\n[%f,%f] packet type is %d",tw,te,store[pii].wlan_type);
+					pii = (pii+1)%HOLD_TIME;
+					continue;
+				}
 				busywait = (float)store[pii].len * 8 * 10 / (float)store[pii].phy_rate;
 				busywait = busywait/(float)NUM_MICROS_PER_SECOND;
 				//printf("-----%s busywait %f\n",ether_sprintf(store[pi].wlan_src),busywait);
