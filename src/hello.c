@@ -372,17 +372,16 @@ static void process_packet(
 		
 		if(debug == 1)
 			printf("\n-----[tw,te]:[%f,%f]\n",tw,te);
-		double neighbor_timestamp = (double)store[pi].timestamp/(double)NUM_NANO_PER_SECOND;	
-		double libpcap_timestamp = store[pi].tv.tv_sec + (double)store[pi].tv.tv_usec/(double)NUM_MICROS_PER_SECOND;
+		double neighbor_timestamp = store[pi].tv.tv_sec + (double)store[pi].tv.tv_usec/(double)NUM_MICROS_PER_SECOND;
 		
 		int pii = pi; /* looking from the very start point */
 		while( (neighbor_timestamp < te) && (pii != pj) )
 		{
 			double neighbor_timestamp = (double)store[pii].timestamp/(double)NUM_NANO_PER_SECOND;
-			//double libpcap_timestamp = store[pii].tv.tv_sec + (double)store[pii].tv.tv_usec/(double)NUM_MICROS_PER_SECOND;
+			double libpcap_timestamp = store[pii].tv.tv_sec + (double)store[pii].tv.tv_usec/(double)NUM_MICROS_PER_SECOND;
 		
 
-			//printf("-----[%d/%d]:[%s+%s]:%f<---->%f\n",pii,pj,ether_sprintf(store[pii].wlan_src),ether_sprintf2(store[pii].wlan_dst),neighbor_timestamp,libpcap_timestamp);						
+			printf("-----[%d/%d]:[%s+%s]:%f<---->%f\n",pii,pj,ether_sprintf(store[pii].wlan_src),ether_sprintf2(store[pii].wlan_dst),neighbor_timestamp,libpcap_timestamp);						
 			if((str_equal(mac,ether_sprintf(store[pii].wlan_dst),2*MAC_LEN) == 1) ||
 			   (str_equal(mac,ether_sprintf2(store[pii].wlan_src),2*MAC_LEN) == 1)) {
 				printf("error: because there is wap packets [tw,te]");
