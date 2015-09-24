@@ -273,14 +273,20 @@ static void write_frequent_print_interference() {
 	{
 		if (cs[j].value == 0)
 			break;
-		fprintf(handle,"cs,%lf,%lf,%s,%s,%f\n",
+		// fprintf(handle,"cs,%lf,%lf,%s,%s,%f\n",
+		// 	inf_start_timestamp,inf_end_timestamp,
+		// 	ether_sprintf(cs[j].wlan_src),ether_sprintf2(cs[j].wlan_dst),cs[j].value);
+		printf("cs,%lf,%lf,%s,%s,%f\n",
 			inf_start_timestamp,inf_end_timestamp,
 			ether_sprintf(cs[j].wlan_src),ether_sprintf2(cs[j].wlan_dst),cs[j].value);
+	
 	}
 		
-	if (debug == 1)
-		printf("in the write_frequent_print_interference!\n");
-	fprintf(handle,"ht,%lf,%lf,ht,ht,%f\n",
+
+	// fprintf(handle,"ht,%lf,%lf,ht,ht,%f\n",
+	// 		inf_start_timestamp,inf_end_timestamp,
+	// 		ht_sum);
+	printf("ht,%lf,%lf,ht,ht,%f\n",
 			inf_start_timestamp,inf_end_timestamp,
 			ht_sum);
   	fclose(handle);
@@ -305,7 +311,7 @@ static void write_frequent_print_interference() {
     struct pcap_stat statistics;
     pcap_stats(pcap_handle, &statistics);
 
-	if (debug == 11)
+	if (debug == LOG_DEBUG)
 	{
 		printf("received is: %d,dropped is: %d, total packets are :%d\n",statistics.ps_recv,statistics.ps_drop,rpp);
 	}
@@ -390,7 +396,7 @@ static void process_packet(
 
 				if((str_equal(mac,ether_sprintf(store[pii].wlan_dst),2*MAC_LEN) == 1) ||
 			  	   (str_equal(mac,ether_sprintf2(store[pii].wlan_src),2*MAC_LEN) == 1)) {
-					printf("\n[%f,%f] packet type is %d",tw,te,store[pii].wlan_type);
+					//printf("\n[%f,%f] packet type is %d",tw,te,store[pii].wlan_type);
 					pii = (pii+1)%HOLD_TIME;
 					continue;
 				}
