@@ -88,7 +88,7 @@ static int nb_num = 1;
 /*
 To check whether the current packet is in the cs list(\gamma) 
 */
-void existing_cs(struct inf_info *inf,int i, unsigned char mac1[], unsigned char mac2[]){
+bool existing_cs(struct inf_info *inf,int i, unsigned char mac1[], unsigned char mac2[]){
 	if ( (str_equal(ether_sprintf(mac1),ether_sprintf2(inf[i].wlan_src),2*MAC_LEN) != 1) &&
 	   (str_equal(ether_sprintf(mac2),ether_sprintf2(inf[i].wlan_src),2*MAC_LEN) != 1) ) 
 		return false;
@@ -100,7 +100,7 @@ void existing_cs(struct inf_info *inf,int i, unsigned char mac1[], unsigned char
 /*
 To judge whether the current packet are broadcast, cts, ack or control packet(\gamma) 
 */
-void non_control_packet(struct inf_info *inf,unsigned char mac1[], unsigned char mac2[]){
+bool non_control_packet(struct inf_info *inf,unsigned char mac1[], unsigned char mac2[]){
 	if (str_equal(mac_zero,ether_sprintf(mac1),2*MAC_LEN) == 1)
 		return false;
 	if (str_equal(mac_ffff,ether_sprintf(mac1),2*MAC_LEN) == 1)
@@ -114,7 +114,7 @@ void non_control_packet(struct inf_info *inf,unsigned char mac1[], unsigned char
 /*
 Insert a packet to the carrier sense or hidden teriminal list
 */
-void update_list(struct inf_info *inf,int NUMBER, unsigned char mac1[], unsigned char mac2[], float value){	
+bool update_list(struct inf_info *inf,int NUMBER, unsigned char mac1[], unsigned char mac2[], float value){	
 	if (debug == 1)
 		printf("debug parameter %s+%s:%f\n",ether_sprintf(mac1),ether_sprintf2(mac2),value);
 	//printf("\n*******************************\n");
@@ -381,7 +381,7 @@ static void process_packet(
 			//printf("-----[%d/%d]:[%s+%s]:%f<---->%f\n",pii,pj,ether_sprintf(store[pii].wlan_src),ether_sprintf2(store[pii].wlan_dst),neighbor_timestamp,libpcap_timestamp);						
 			if((str_equal(mac,ether_sprintf(store[pii].wlan_dst),2*MAC_LEN) == 1) ||
 			   (str_equal(mac,ether_sprintf2(store[pii].wlan_src),2*MAC_LEN) == 1)) {
-				print "error: because there is wap packets [tw,te]"
+				printf("error: because there is wap packets [tw,te]");
 				continue;
 			}
 
