@@ -360,7 +360,7 @@ static void process_packet(
 	store[rpp%HOLD_TIME].ip_id = p.ip_id;
 	pj = rpp%HOLD_TIME;
 	end_pointer = rpp%HOLD_TIME; //end store packet
-	if(debug == 1)
+	if(debug == LOG_DEBUG)
 	{
 		double neighbor_timestamp = (double)p.timestamp/(double)NUM_NANO_PER_SECOND;	
 		double libpcap_timestamp = p.tv.tv_sec + (double)p.tv.tv_usec/(double)NUM_MICROS_PER_SECOND;
