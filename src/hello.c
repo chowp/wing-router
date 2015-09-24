@@ -33,6 +33,10 @@ sigset_t block_set;
 #define false 0
 #define true 1
 
+#define bool int
+#define false 0
+#define true 1
+
 #define DUMP_DIR "/tmp/wifiunion-passive/m111.cap"
 #define PENDING_UPDATE_FILENAME "/tmp/wifiunion-passive/current-update.gz"
 #define PENDING_FREQUENT_UPDATE_FILENAME "/tmp/wifiunion-passive/current-frequent-update"
@@ -393,7 +397,7 @@ static void process_packet(
 				//printf("-----%s busywait %f\n",ether_sprintf(store[pi].wlan_src),busywait);
 				if ( p.ip_totlen == 0) /*actually, ip_totlen indicates the retry counts*/
 				{
-					if (debug == INF_DETAIL)
+					if (debug == LOG_INF)
 						update_list(cs,CS_NUMBER,store[pii].wlan_src,store[pii].wlan_dst,busywait);
 					else
 						cs_sum = cs_sum + te - tw;
