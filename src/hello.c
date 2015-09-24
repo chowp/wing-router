@@ -280,15 +280,15 @@ static void write_frequent_print_interference() {
 		// 	inf_start_timestamp,inf_end_timestamp,
 		// 	ether_sprintf(cs[j].wlan_src),ether_sprintf2(cs[j].wlan_dst),cs[j].value);
 		overall_busywait = overall_busywait + (double)cs[j].value;
-		printf("%f,%f\n",overall_busywait,cs[j].value);
+		printf("%f,%f,%f\n",overall_busywait,cs[j].value,(double)cs[j].value/overall_busywait);
 	}
 	
 	printf("\nCS:");	
 	for(j = 0 ; j < CS_NUMBER ; j ++){
 		if (cs[j].value == 0)
 			break;
-		cs[j].percentage = 100.0*((double)cs[j].value/overall_busywait);
-		printf("%d%%,",cs[j].percentage); 
+		cs[j].percentage = ((double)cs[j].value/overall_busywait);
+		printf("%f%%,",cs[j].percentage); 
 	}
 
 	// fprintf(handle,"ht,%lf,%lf,ht,ht,%f\n",
