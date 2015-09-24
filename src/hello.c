@@ -66,7 +66,7 @@ struct packet_info store[HOLD_TIME]; /* used to store packets info, including ne
 struct inf_info cs[CS_NUMBER]; /* used to store cs info in time gamma */
 struct inf_info ht[HT_NUMBER]; /* used to store ht info in time gamma */
 struct inf_info ht_tmp[HT_NUMBER];
-struct summary_info summay;
+struct summary_info summary;
 static double inf_start_timestamp;
 static double delay_start_timestamp;
 static double inf_end_timestamp;    /* we record time to ouput the result */
