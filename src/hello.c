@@ -53,19 +53,12 @@ static char mac[12];
 static char mac_zero[12] = "000000000000";
 static char mac_ffff[12] = "FFFFFFFFFFFF";
 static int frequent_sequence_number = 0;
-static int64_t start_timestamp_microseconds;
-static int begin_time = 0;
-static int now_time = 0;
-static int last_time = 0;
 static int debug;
 static int rp = 0;
 static int rpp = 0;
 static int every = 0;
-static int pch_count_debug = 0;
-static double time_pch;
-static int last_drop = 0;
 
-struct packet_info store[HOLD_TIME]; /* used to store neighbor's info */
+struct packet_info store[HOLD_TIME]; /* used to store packets info, including neighbors and mine */
 struct inf_info cs[CS_NUMBER]; /* used to store cs info in time gamma */
 struct inf_info ht[HT_NUMBER]; /* used to store ht info in time gamma */
 struct inf_info ht_tmp[HT_NUMBER];
@@ -90,16 +83,7 @@ struct packet_info p;
 struct neighbor * nb;
 static int nb_num = 1;
 
-void init_neighbor(struct neighbor* n)
-{
-	int i =0;
-	for(i = 0 ; i < HOLD_TIME ; i++)
-		n->pkt_all_data[i] = 0;
-	n->pkt_all = 0;
-	n->pkt_all_retry = 0;
-	n->cli = NULL;
-	n->next = NULL;
-}
+
 const char*
 ether_sprintf(const unsigned char *mac)
 {
@@ -525,90 +509,52 @@ int str_equal(const unsigned char *s1,const unsigned char *s2,int len){
 	return 1;
 }
 
-void reset_one_line(int j)
-{
 
-	int no = 0;
-	struct neighbor *tmp = nb;
-	while (no < nb_num)
-	{
-		tmp->pkt_all_data[j] = 0;
-		tmp = tmp->next;
-		no = no + 1;
-	}
-	hold[j] = 0;
-
+/*
+To check whether the current packet is in the cs list(\gamma) 
+*/
+void existing_cs(struct inf_info *inf,int i, unsigned char mac1[], unsigned char mac2[]){
+	if ( (str_equal(ether_sprintf(mac1),ether_sprintf2(inf[i].wlan_src),2*MAC_LEN) != 1) &&
+	   (str_equal(ether_sprintf(mac2),ether_sprintf2(inf[i].wlan_src),2*MAC_LEN) != 1) ) 
+		return false;
+	if ( (str_equal(ether_sprintf(mac1),ether_sprintf2(inf[i].wlan_dst),2*MAC_LEN) != 1) &&
+	   (str_equal(ether_sprintf(mac2),ether_sprintf2(inf[i].wlan_dst),2*MAC_LEN) != 1) ) 
+		return false;
+	return true;
 }
-
-
-void update_list(struct inf_info *inf,int NUMBER, unsigned char mac1[], unsigned char mac2[], float value)
-{	
+/*
+To judge whether the current packet are broadcast, cts, ack or control packet(\gamma) 
+*/
+void non_control_packet(struct inf_info *inf,unsigned char mac1[], unsigned char mac2[]){
+	if (str_equal(mac_zero,ether_sprintf(mac1),2*MAC_LEN) == 1)
+		return false;
+	if (str_equal(mac_ffff,ether_sprintf(mac1),2*MAC_LEN) == 1)
+		return false;
+	if (str_equal(mac_zero,ether_sprintf(mac2),2*MAC_LEN) == 1)
+		return false;
+	if (str_equal(mac_ffff,ether_sprintf(mac2),2*MAC_LEN) == 1)
+		return false;
+	return true;
+}
+/*
+Insert a packet to the carrier sense or hidden teriminal list
+*/
+void update_list(struct inf_info *inf,int NUMBER, unsigned char mac1[], unsigned char mac2[], float value){	
 	if (debug == 1)
 		printf("debug parameter %s+%s:%f\n",ether_sprintf(mac1),ether_sprintf2(mac2),value);
-
 	//printf("\n*******************************\n");
+
 	int i;
-	for(i=0;i<NUMBER;i++)
-	{
+	for(i=0;i<NUMBER;i++){
 		//printf("*  %s+%s:%f\n",ether_sprintf(inf[i].wlan_src),ether_sprintf2(inf[i].wlan_dst),inf[i].value);
 		if (inf[i].value == 0)
-		{
-			//printf("*******************************\n\n");
 			break;
-			
+		if (!non_control_packet(inf,mac1,mac2)){
+			continue;
+		} 
+		if (existing_cs(inf,i,mac1,mac2)){
+			inf[i].value = inf[i].value + value;
 		}
-		if( 
-			(
-				(str_equal(mac_zero,ether_sprintf(mac1),2*MAC_LEN) != 1) &&
-				(str_equal(mac_ffff,ether_sprintf(mac1),2*MAC_LEN) != 1)
-			)
-			&&
-			( 
-				(str_equal(ether_sprintf(mac1),ether_sprintf2(inf[i].wlan_src),2*MAC_LEN) == 1) ||
-			    (str_equal(ether_sprintf(mac1),ether_sprintf2(inf[i].wlan_dst),2*MAC_LEN) == 1) 
-			)
-		  )
-
-		{
-			inf[i].value = inf[i].value + value; 
-			//printf("US %s+%s:%f\n",ether_sprintf(inf[i].wlan_src),ether_sprintf2(inf[i].wlan_dst),inf[i].value);
-			//printf("*******************************\n\n");
-	
-			return;
-		}
-		else if( 
-			(	
-				(str_equal(mac_zero,ether_sprintf(mac2),2*MAC_LEN) != 1)&&
-				(str_equal(mac_ffff,ether_sprintf(mac2),2*MAC_LEN) != 1)
-			)
-			&&
-			( 
-				(str_equal(ether_sprintf(mac2),ether_sprintf2(inf[i].wlan_src),2*MAC_LEN) == 1) ||
-			    (str_equal(ether_sprintf(mac2),ether_sprintf2(inf[i].wlan_dst),2*MAC_LEN) == 1) 
-			)
-		  )
-		{
-			inf[i].value = inf[i].value + value; 
-			//printf("UD %s+%s:%f\n",ether_sprintf(inf[i].wlan_src),ether_sprintf2(inf[i].wlan_dst),inf[i].value);
-			//printf("*******************************\n\n");
-	
-			return;
-		}
-	
-	}
-
-	/* i don't want oneof the "00000000000" or "FFFFFFFFFFFF"to be the index of inf*/
-	if (
-		(str_equal(mac_zero,ether_sprintf(mac1),2*MAC_LEN) == 1)
-	||  (str_equal(mac_zero,ether_sprintf2(mac2),2*MAC_LEN) == 1)
-	||  (str_equal(mac_ffff,ether_sprintf(mac1),2*MAC_LEN) == 1)
-	||	(str_equal(mac_ffff,ether_sprintf2(mac2),2*MAC_LEN) == 1)				 
-		)
-	{
-		//printf("either 00000 or FFFFF !! return\n");
-		//printf("*******************************\n\n");
-	
-		return;
 	}
 	/* there is no match!!*/
 	for(i=0;i<NUMBER;i++)
@@ -626,9 +572,10 @@ void update_list(struct inf_info *inf,int NUMBER, unsigned char mac1[], unsigned
 	}
 }
 
-/**************************************/
-static int write_frequent_update_delay() {
-  //printf("Writing frequent log to %s\n", PENDING_FREQUENT_UPDATE_FILENAME);
+/*
+ print out the packet trace
+*/
+static int write_frequent_packet_trace() {
   FILE* handle = fopen(PENDING_FREQUENT_UPDATE_FILENAME_DELAY, "w");
   if (!handle) {
     perror("Could not open update file for writing\n");
@@ -640,7 +587,7 @@ static int write_frequent_update_delay() {
  	int ii = (start_pointer+1)%HOLD_TIME;
  	while(i < rounds )
  	{
- 		// comment : 2015-9-15, output all the packets, including neighbors'
+ 		// uncomment to print only mine's qos packet
  		// if((store[ii].wlan_type == (u16)136) && 
  		//   (str_equal(mac,ether_sprintf(store[ii].wlan_src),2*MAC_LEN) == 1) )
  		// {
@@ -679,32 +626,24 @@ static int write_frequent_update_delay() {
 	    exit(1);
 	  }
   
- /************************/
-	if(debug == 1)
-	{
-	printf("rename is good!\n");
-	}
-/*************************/
 
-  start_timestamp_microseconds
-      = nb->start_timeval.tv_sec + nb->start_timeval.tv_usec/NUM_MICROS_PER_SECOND;
-  ++frequent_sequence_number;
+	 ++frequent_sequence_number;
 
     
 	start_pointer = rpp%HOLD_TIME;
 }
 
-
-/**************************************/
-
-static void write_frequent_update_simple() {
+/*
+print out the overall interference every gamma interval
+*/
+static void write_frequent_print_overall_interference() {
   //printf("Writing frequent log to %s\n", PENDING_FREQUENT_UPDATE_FILENAME);
-  FILE* handle = fopen(PENDING_FREQUENT_UPDATE_FILENAME, "w");
- 
-  if (!handle) {
-    perror("Could not open update file for writing\n");
-    exit(1);
-  }
+	 FILE* handle = fopen(PENDING_FREQUENT_UPDATE_FILENAME, "w");
+	 
+	  if (!handle) {
+	    perror("Could not open update file for writing\n");
+	    exit(1);
+	 }
   	
 		
 	fprintf(handle,"cs,%lf,%lf,cs,cs,%f\n",
@@ -713,32 +652,27 @@ static void write_frequent_update_simple() {
 	fprintf(handle,"ht,%lf,%lf,ht,ht,%f\n",
 			inf_start_timestamp,inf_end_timestamp,
 			ht_sum);
-	
+  	fclose(handle);
 
-  fclose(handle);
-
-  int file_time = (int)inf_end_timestamp;
-  char update_filename[FILENAME_MAX];
-  snprintf(update_filename,
+  	int file_time = (int)inf_end_timestamp;
+  	char update_filename[FILENAME_MAX];
+  	snprintf(update_filename,
            FILENAME_MAX,
            FREQUENT_UPDATE_FILENAME,
            mac,
            mac,
            file_time,
            frequent_sequence_number);
-  if (rename(PENDING_FREQUENT_UPDATE_FILENAME, update_filename)) {
+  	if (rename(PENDING_FREQUENT_UPDATE_FILENAME, update_filename)) {
     perror("Could not stage update");
     exit(1);
-  }
+  	}
   
 
-  start_timestamp_microseconds
-      = nb->start_timeval.tv_sec + nb->start_timeval.tv_usec/NUM_MICROS_PER_SECOND;
-  ++frequent_sequence_number;
+  	++frequent_sequence_number;
 
     struct pcap_stat statistics;
     pcap_stats(pcap_handle, &statistics);
-
 	if (debug == 11)
 	{
 		printf("received is: %d,dropped is: %d, total packets are :%d\n",statistics.ps_recv,statistics.ps_drop,rpp);
@@ -746,20 +680,18 @@ static void write_frequent_update_simple() {
 
 }
 
-
-/**************************************/
-
-static void write_frequent_update() {
-  //printf("Writing frequent log to %s\n", PENDING_FREQUENT_UPDATE_FILENAME);
-  FILE* handle = fopen(PENDING_FREQUENT_UPDATE_FILENAME, "w");
+/*
+print out the carrier sense's interference seperately
+*/
+static void write_frequent_print_interference() {
+ 	FILE* handle = fopen(PENDING_FREQUENT_UPDATE_FILENAME, "w");
  
-  if (!handle) {
-    perror("Could not open update file for writing\n");
-    exit(1);
-  }
+  	if (!handle) {
+    	perror("Could not open update file for writing\n");
+    	exit(1);
+  	}
  
-  /*print out*/
-  	
+  	/*print out*/ 	
 	int j = 0;
 	for (j = 0 ; j < CS_NUMBER ;j ++)
 	{
@@ -771,32 +703,28 @@ static void write_frequent_update() {
 	}
 		
 	if (debug == 1)
-		printf("in the write_frequent_update!\n");
+		printf("in the write_frequent_print_interference!\n");
 	fprintf(handle,"ht,%lf,%lf,ht,ht,%f\n",
 			inf_start_timestamp,inf_end_timestamp,
 			ht_sum);
-	
+  	fclose(handle);
 
-  fclose(handle);
-
-  int file_time = (int)inf_end_timestamp;
-  char update_filename[FILENAME_MAX];
-  snprintf(update_filename,
+  	int file_time = (int)inf_end_timestamp;
+  	char update_filename[FILENAME_MAX];
+  	snprintf(update_filename,
            FILENAME_MAX,
            FREQUENT_UPDATE_FILENAME,
            mac,
            mac,
            file_time,
            frequent_sequence_number);
-  if (rename(PENDING_FREQUENT_UPDATE_FILENAME, update_filename)) {
-    perror("Could not stage update");
-    exit(1);
-  }
+  	if (rename(PENDING_FREQUENT_UPDATE_FILENAME, update_filename)) {
+    	perror("Could not stage update");
+    	exit(1);
+  	}
   
 
-  start_timestamp_microseconds
-      = nb->start_timeval.tv_sec + nb->start_timeval.tv_usec/NUM_MICROS_PER_SECOND;
-  ++frequent_sequence_number;
+  	++frequent_sequence_number;
 
     struct pcap_stat statistics;
     pcap_stats(pcap_handle, &statistics);
@@ -814,10 +742,10 @@ static void process_packet(
         u_char* const user,
         const struct pcap_pkthdr* const header,
         const u_char* const bytes) {
- // if (sigprocmask(SIG_BLOCK, &block_set, NULL) < 0) {
-  //  perror("sigprocmask");
- //   exit(1);
- // }
+// if (sigprocmask(SIG_BLOCK, &block_set, NULL) < 0) {
+//     perror("sigprocmask");
+//     exit(1);
+//  }
 
 
 	float busywait = 0;
@@ -849,7 +777,7 @@ static void process_packet(
 	store[rpp%HOLD_TIME].tcp_ack = p.tcp_ack;
 	store[rpp%HOLD_TIME].ip_id = p.ip_id;
 	pj = rpp%HOLD_TIME;
-	end_pointer = rpp%HOLD_TIME;
+	end_pointer = rpp%HOLD_TIME; //end store packet
 	if(debug == 1)
 	{
 		double neighbor_timestamp = (double)p.timestamp/(double)NUM_NANO_PER_SECOND;	
@@ -857,10 +785,9 @@ static void process_packet(
 	
 		printf("+++++packet %d:%f<---->%f\n",rpp,neighbor_timestamp,libpcap_timestamp);	
 	}
-	/*end store packet*/
 	
-	if((str_equal(mac,ether_sprintf(p.wlan_src),2*MAC_LEN) == 1))
-	{
+	
+	if((str_equal(mac,ether_sprintf(p.wlan_src),2*MAC_LEN) == 1)){ /*trigger calculation*/
 		double tw = p.tv.tv_sec + (double)p.tv.tv_usec/(double)NUM_MICROS_PER_SECOND;
 		double te = (double)p.timestamp/(double)NUM_NANO_PER_SECOND;
 		
@@ -873,26 +800,16 @@ static void process_packet(
 		while( (neighbor_timestamp < te) && (pii != pj) )
 		{
 			double neighbor_timestamp = (double)store[pii].timestamp/(double)NUM_NANO_PER_SECOND;
-			double libpcap_timestamp = store[pii].tv.tv_sec + (double)store[pii].tv.tv_usec/(double)NUM_MICROS_PER_SECOND;
+			//double libpcap_timestamp = store[pii].tv.tv_sec + (double)store[pii].tv.tv_usec/(double)NUM_MICROS_PER_SECOND;
 		
 
-			if(debug == 1)
-			{
-				printf("-----[%d/%d]:[%s+%s]:%f<---->%f\n",pii,pj,ether_sprintf(store[pii].wlan_src),ether_sprintf2(store[pii].wlan_dst),neighbor_timestamp,libpcap_timestamp);
-			
-			}
-			
-			if((str_equal(mac,ether_sprintf(store[pii].wlan_dst),2*MAC_LEN) == 1))
-			{
-				pii  =  (pii + 1)%HOLD_TIME;
+			//printf("-----[%d/%d]:[%s+%s]:%f<---->%f\n",pii,pj,ether_sprintf(store[pii].wlan_src),ether_sprintf2(store[pii].wlan_dst),neighbor_timestamp,libpcap_timestamp);						
+			if((str_equal(mac,ether_sprintf(store[pii].wlan_dst),2*MAC_LEN) == 1) ||
+			   (str_equal(mac,ether_sprintf2(store[pii].wlan_src),2*MAC_LEN) == 1)) {
+				print "error: because there is wap packets [tw,te]"
 				continue;
 			}
 
-			if((str_equal(mac,ether_sprintf2(store[pii].wlan_src),2*MAC_LEN) == 1))
-			{
-				pii  =  (pii + 1)%HOLD_TIME;
-				continue;
-			}
 
 			if ( ( neighbor_timestamp > tw ) && ( neighbor_timestamp < te) ) 
 			{
@@ -901,7 +818,7 @@ static void process_packet(
 				//printf("-----%s busywait %f\n",ether_sprintf(store[pi].wlan_src),busywait);
 				if ( p.ip_totlen == 0) /*actually, ip_totlen indicates the retry counts*/
 				{
-					if (debug != 4)
+					if (debug == INF_DETAIL)
 						update_list(cs,CS_NUMBER,store[pii].wlan_src,store[pii].wlan_dst,busywait);
 					else
 						cs_sum = cs_sum + te - tw;
@@ -932,12 +849,9 @@ static void process_packet(
 	if ((inf_end_timestamp - inf_start_timestamp) > FREQUENT_UPDATE_PERIOD_SECONDS)
 	{
 		/*print out*/
-		/* we currently output the packet detail, not interference 
-		if (debug != 4)
-			write_frequent_update(); 
-		else
-			write_frequent_update_simple();
-		*/
+		if (debug == LOG_INF)
+			write_frequent_print_interference(); 
+		//write_frequent_print_overall_interference();
 		memset(cs,0,sizeof(cs));
 		ht_sum = 0;
 		cs_sum = 0;
@@ -947,52 +861,42 @@ static void process_packet(
 	if ((inf_end_timestamp - delay_start_timestamp) > FREQUENT_UPDATE_DELAY_SECONDS)
 	{
 		/*print out*/
-		if (debug != 2)
-			write_frequent_update_delay(); /*write the delay into the file*/
+		if (debug == LOG_TRACE)
+			write_frequent_packet_trace(); /*write the delay into the file*/
 		delay_start_timestamp = inf_end_timestamp;
 	}
 
-	if(debug == 10) //just for debug count
-	{
-		if((pch_count_debug % every) == 0)
-		{
-			printf("wireless data packet and loss is:[%d] and [%d]\n",rpp,pch_count_debug);	
-		}
-	}
-	if(debug == 3)
+	if(debug == LOG_DUMP)
 		pcap_dump(user,header,bytes);
 	//}//for 136
   
  
 
-  //if (sigprocmask(SIG_UNBLOCK, &block_set, NULL) < 0) {
-   // perror("sigprocmask");
-   // exit(1);
-  //}
+  // if (sigprocmask(SIG_UNBLOCK, &block_set, NULL) < 0) {
+  // perror("sigprocmask");
+  // exit(1);
+  // }
  
 }
 
 
 
 
- static pcap_t* initialize_pcap(const char* const interface) {
-  char errbuf[PCAP_ERRBUF_SIZE];
-  pcap_t* const handle = pcap_open_live(
-      interface, BUFSIZ, PCAP_PROMISCUOUS, PCAP_TIMEOUT_MILLISECONDS, errbuf);
-  if (!handle) {
-    fprintf(stderr, "Couldn't open device %s: %s\n", interface, errbuf);
-    return NULL;
-  }
+static pcap_t* initialize_pcap(const char* const interface) {
+  	char errbuf[PCAP_ERRBUF_SIZE];
+  	pcap_t* const handle = pcap_open_live(
+      	interface, BUFSIZ, PCAP_PROMISCUOUS, PCAP_TIMEOUT_MILLISECONDS, errbuf);
+  	if (!handle) {
+    	fprintf(stderr, "Couldn't open device %s: %s\n", interface, errbuf);
+    	return NULL;
+  	}
 
     fprintf(stderr, "type is %d\n",pcap_datalink(handle));
 
-  return handle;
+  	return handle;
 }
 
-static void clear_station(struct neighbor* p,int j)
-{
-	p->pkt_all_data[j] = 0;
-}
+
 
 
 
@@ -1005,12 +909,12 @@ static void set_next_alarm() {
  * seconds). We trigger an ALRM every 5 seconds and only write differential
  * updates every 6th ALRM. */
 static void handle_signals(int sig) {
-  if (sig == SIGINT || sig == SIGTERM) {
-    exit(0);
-  } else if (sig == SIGALRM) {
-    write_frequent_update();
-    set_next_alarm();
-  }
+	if (sig == SIGINT || sig == SIGTERM) {
+    	exit(0);
+  	} else if (sig == SIGALRM) {
+    	write_frequent_print_interference();
+    	set_next_alarm();
+  	}
 }
 
 static void initialize_signal_handler(){
@@ -1044,22 +948,7 @@ int main(int argc,char *argv[]){
 	printf("%s\n",mac);
 	every = atoi(argv[5]);
 	FREQUENT_UPDATE_DELAY_SECONDS = every;
- //fin2=fopen(argv[2],"a+");
-
-	//if(fin2==NULL)
-	//{
-	//	printf("File Open Error!\n");	
-	//	exit(1);
-	//}
-	
-	
-	
-
-	
-	//initialize_signal_handler();
-	//set_next_alarm();
-	
-	
+ 	
 	
 	pcap_handle = initialize_pcap(argv[1]);
 	
@@ -1069,8 +958,6 @@ int main(int argc,char *argv[]){
 	
 	pkt = pcap_dump_open(pcap_handle,DUMP_DIR);
 	
-	nb = (struct neighbor *)malloc(sizeof(struct neighbor));
-	init_neighbor(nb);
 	pcap_loop(pcap_handle,QUEUE_SIZE,process_packet,(u_char *)pkt);
 	
 	

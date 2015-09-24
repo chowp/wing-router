@@ -4,6 +4,13 @@
 #include <stdlib.h>
 #include <sys/time.h>
 
+/*define the print debug level, sorted by the load to the AP */
+#define LOG_DEBUG -1
+#define LOG_SLIENT 0
+#define LOG_INF 1
+#define LOG_TRACE 2
+#define LOG_DUMP 3
+
 #define TCP_ACK 1
 #define TCP_NON_ACK 2
 #define C2AP_ACK 1
