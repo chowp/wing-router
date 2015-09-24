@@ -69,6 +69,7 @@ struct inf_info ht_tmp[HT_NUMBER];
 static double inf_start_timestamp;
 static double delay_start_timestamp;
 static double inf_end_timestamp;    /* we record time to ouput the result */
+static double last_te; /*used to infer th*/
 static int pi = 0; /*use as the start point of neighbor packet_info */
 static int pj = 0;
 static double ht_sum = 0;
@@ -366,12 +367,12 @@ static void process_packet(
 	}
 	
 	
-	if((str_equal(mac,ether_sprintf(p.wlan_src),2*MAC_LEN) == 1)){ /*trigger calculation*/
+	if( (p.wlan_type == (u16)136) && (str_equal(mac,ether_sprintf(p.wlan_src),2*MAC_LEN) == 1)){ /*trigger calculation*/
 		double tw = p.tv.tv_sec + (double)p.tv.tv_usec/(double)NUM_MICROS_PER_SECOND;
 		double te = (double)p.timestamp/(double)NUM_NANO_PER_SECOND;
+		last_te = te;
 		
-		if(debug == 1)
-			printf("\n-----[tw,te]:[%f,%f]\n",tw,te);
+		
 		double neighbor_timestamp = store[pi].tv.tv_sec + (double)store[pi].tv.tv_usec/(double)NUM_MICROS_PER_SECOND;
 		
 		int pii = pi; /* looking from the very start point */
@@ -384,7 +385,7 @@ static void process_packet(
 			printf("-----[%d/%d]:[%s+%s]:%f<---->%f\n",pii,pj,ether_sprintf(store[pii].wlan_src),ether_sprintf2(store[pii].wlan_dst),neighbor_timestamp,libpcap_timestamp);						
 			if((str_equal(mac,ether_sprintf(store[pii].wlan_dst),2*MAC_LEN) == 1) ||
 			   (str_equal(mac,ether_sprintf2(store[pii].wlan_src),2*MAC_LEN) == 1)) {
-				printf("error: because there is wap packets [tw,te]");
+				printf("\n[%f,%f] packet type is %d",tw,te,store[pii].wlan_type);
 				continue;
 			}
 
