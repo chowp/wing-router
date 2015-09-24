@@ -403,7 +403,7 @@ static void process_packet(
 				busywait = (float)store[pii].len * 8 * 10 / (float)store[pii].phy_rate;
 				busywait = busywait/(float)NUM_MICROS_PER_SECOND;
 				//printf("-----%s busywait %f\n",ether_sprintf(store[pi].wlan_src),busywait);
-				if ( p.ip_totlen == 0) /*actually, ip_totlen indicates the retry counts*/
+				if ( p.wlan_retry == 0) /*actually, ip_totlen indicates the retry counts*/
 				{
 					if (debug == LOG_INF)
 						update_list(cs,CS_NUMBER,store[pii].wlan_src,store[pii].wlan_dst,busywait);
