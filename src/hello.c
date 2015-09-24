@@ -284,8 +284,10 @@ static void write_frequent_print_interference() {
 	
 	printf("\nCS:");	
 	for(j = 0 ; j < CS_NUMBER ; j ++){
-		cs[j].percentage = 100*cs[j].value/overall_busywait;
-		printf("%d",cs[j].percentage); 
+		if (cs[j].value == 0)
+			break;
+		cs[j].percentage = 100*(cs[j].value/overall_busywait);
+		printf("%d%%,",cs[j].percentage); 
 	}
 
 	// fprintf(handle,"ht,%lf,%lf,ht,ht,%f\n",
@@ -297,7 +299,7 @@ static void write_frequent_print_interference() {
   	fclose(handle);
 
 	// print summary info
-	printf("\ninterferers=%f,extra=%f,busywait=%f",summary.inf_num,summary.overall_extra_time,overall_busywait);
+	printf("\ninterferers=%d,extra=%f,busywait=%f",summary.inf_num,summary.overall_extra_time,overall_busywait);
 	memset(&summary, 0, sizeof(summary));
 	
   	int file_time = (int)inf_end_timestamp;
