@@ -136,7 +136,7 @@ struct packet_info {
 	unsigned int tcp_ack;
 	unsigned int tcp_next_seq;
 	unsigned int		wlan_nav;	/* frame NAV duration */
-	unsigned int		wlan_retry:1;
+	unsigned int		wlan_retry;
 	/*digest*/
 	unsigned char		tcp_header[TCP_HEADER];
 	u_int64_t		timestamp;	/* timestamp from mactime */
