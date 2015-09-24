@@ -271,7 +271,7 @@ static void write_frequent_print_interference() {
  
   	/*print out*/ 	
 	int j = 0;
-	float overall_busywait = 0;
+	double overall_busywait = 0;
 	for (j = 0 ; j < CS_NUMBER ;j ++)
 	{
 		if (cs[j].value == 0)
@@ -279,7 +279,7 @@ static void write_frequent_print_interference() {
 		// fprintf(handle,"cs,%lf,%lf,%s,%s,%f\n",
 		// 	inf_start_timestamp,inf_end_timestamp,
 		// 	ether_sprintf(cs[j].wlan_src),ether_sprintf2(cs[j].wlan_dst),cs[j].value);
-		overall_busywait = overall_busywait + cs[j].value;
+		overall_busywait = overall_busywait + (double)cs[j].value;
 		printf("%f,%f\n",overall_busywait,cs[j].value);
 	}
 	
@@ -287,7 +287,7 @@ static void write_frequent_print_interference() {
 	for(j = 0 ; j < CS_NUMBER ; j ++){
 		if (cs[j].value == 0)
 			break;
-		cs[j].percentage = 100.0*(cs[j].value/overall_busywait);
+		cs[j].percentage = 100.0*((double)cs[j].value/overall_busywait);
 		printf("%d%%,",cs[j].percentage); 
 	}
 
