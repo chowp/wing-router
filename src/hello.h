@@ -245,4 +245,431 @@ mcs_index_to_rate(int mcs, int ht20, int lgi)
 	}
 	return 0;
 }
+
+
+const char*
+ether_sprintf(const unsigned char *mac)
+{
+	static char etherbuf[13];
+	snprintf(etherbuf, sizeof(etherbuf), "%02x%02x%02x%02x%02x%02x",
+		mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+	return etherbuf;
+}
+
+const char*
+ether_sprintf2(const unsigned char *mac)
+{
+	static char etherbuf2[13];
+	snprintf(etherbuf2, sizeof(etherbuf2), "%02x%02x%02x%02x%02x%02x",
+		mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+	return etherbuf2;
+}
+
+int ieee80211_get_hdrlen(u16 fc)
+{
+	int hdrlen = 24;
+
+	switch (fc & IEEE80211_FCTL_FTYPE) {
+	case IEEE80211_FTYPE_DATA:
+		if ((fc & IEEE80211_FCTL_FROMDS) && (fc & IEEE80211_FCTL_TODS))
+			hdrlen = 30; /* Addr4 */
+		/*
+		 * The QoS Control field is two bytes and its presence is
+		 * indicated by the IEEE80211_STYPE_QOS_DATA bit. Add 2 to
+		 * hdrlen if that bit is set.
+		 * This works by masking out the bit and shifting it to
+		 * bit position 1 so the result has the value 0 or 2.
+		 */
+		hdrlen += (fc & IEEE80211_STYPE_QOS_DATA) >> 6;
+		break;
+	case IEEE80211_FTYPE_CTL:
+		/*
+		 * ACK and CTS are 10 bytes, all others 16. To see how
+		 * to get this condition consider
+		 *   subtype mask:   0b0000000011110000 (0x00F0)
+		 *   ACK subtype:    0b0000000011010000 (0x00D0)
+		 *   CTS subtype:    0b0000000011000000 (0x00C0)
+		 *   bits that matter:         ^^^      (0x00E0)
+		 *   value of those: 0b0000000011000000 (0x00C0)
+		 */
+		if ((fc & 0xE0) == 0xC0)
+			hdrlen = 10;
+		else
+			hdrlen = 16;
+		break;
+	}
+
+	return hdrlen;
+}
+
+
+
+
+
+static int
+parse_radiotap_header(unsigned char * buf,  struct packet_info* p)
+{
+	struct ieee80211_radiotap_header* rh;
+	__le32 present; /* the present bitmap */
+	unsigned char* b; /* current byte */
+	int i;
+	u16 rt_len, x;
+	unsigned char known, flags, ht20, lgi;
+
+		
+
+
+	rh = (struct ieee80211_radiotap_header*)buf;
+	b = buf + sizeof(struct ieee80211_radiotap_header);
+	present = le32toh(rh->it_present);
+	rt_len = le16toh(rh->it_len);
+
+	/* check for header extension - ignore for now, just advance current position */
+	while (present & 0x80000000  && b - buf < rt_len) {
+		present = le32toh(*(__le32*)b);
+		b = b + 4;
+	}
+	present = le32toh(rh->it_present); // in case it moved
+	/* radiotap bitmap has 32 bit, but we are only interrested until
+	 * bit 19 (IEEE80211_RADIOTAP_MCS) => i<20 */
+	for (i = 0; i < 20 && b - buf < rt_len; i++) {
+		if ((present >> i) & 1) {
+			
+			switch (i) {
+				/* just ignore the following (advance position only) */
+				case IEEE80211_RADIOTAP_TSFT:
+					
+					p->timestamp = le64toh(*(u_int64_t*)b);//changhua
+					b = b + 8;	
+					break;
+				case IEEE80211_RADIOTAP_DBM_TX_POWER:
+				case IEEE80211_RADIOTAP_ANTENNA:
+			
+				case IEEE80211_RADIOTAP_RTS_RETRIES:
+				case IEEE80211_RADIOTAP_DATA_RETRIES:
+					
+					b++;
+					break;
+				case IEEE80211_RADIOTAP_EXT:
+					
+					b = b + 4;
+					break;
+				case IEEE80211_RADIOTAP_FHSS:
+				case IEEE80211_RADIOTAP_LOCK_QUALITY:
+				case IEEE80211_RADIOTAP_TX_ATTENUATION:
+					p->ip_totlen = le16toh(*(u_int16_t*)b);
+				case IEEE80211_RADIOTAP_RX_FLAGS:
+				case IEEE80211_RADIOTAP_TX_FLAGS:
+				case IEEE80211_RADIOTAP_DB_TX_ATTENUATION:
+					
+					b = b + 2;
+					break;
+				/* we are only interrested in these: */
+				case IEEE80211_RADIOTAP_RATE:
+					p->phy_rate = (*b)*5; /* rate is in 500kbps */
+					//p->phy_rate_idx = rate_to_index(p->phy_rate);
+					b++;
+					break;
+				case IEEE80211_RADIOTAP_DBM_ANTSIGNAL:
+					p->tcp_ack = le32toh(*(u_int32_t*)b);
+					p->phy_signal = *(char*)b;
+					b++;
+					break;
+				case IEEE80211_RADIOTAP_DBM_ANTNOISE:
+					
+					p->phy_noise = *(char*)b;
+					b++;
+					break;
+				case IEEE80211_RADIOTAP_DB_ANTSIGNAL:
+					
+					p->phy_snr = *b;
+					b++;
+					break;
+				case IEEE80211_RADIOTAP_FLAGS:
+					/* short preamble */
+					
+					if (*b & IEEE80211_RADIOTAP_F_SHORTPRE) {
+						p->phy_flags |= PHY_FLAG_SHORTPRE;
+						
+					}
+					if (*b & IEEE80211_RADIOTAP_F_BADFCS) {
+						p->phy_flags |= PHY_FLAG_BADFCS;
+						
+					}
+					
+					/*here to get the potential tcp seq, only the outgoing tcp packet is valibale*/
+					p->tcp_seq = le32toh(*(u_int32_t*)b);
+					b++;
+					break;
+				case IEEE80211_RADIOTAP_CHANNEL:
+					/* channel & channel type */
+					if (((long)b)%2) b++; // align to 16 bit boundary
+					
+					b = b + 2;
+					b = b + 2;
+					break;
+				case IEEE80211_RADIOTAP_MCS:
+					/* Ref http://www.radiotap.org/defined-fields/MCS */
+					known = *b++;
+					flags = *b++;
+					
+
+					if (known & IEEE80211_RADIOTAP_MCS_HAVE_BW)
+						ht20 = (flags & IEEE80211_RADIOTAP_MCS_BW_MASK) == IEEE80211_RADIOTAP_MCS_BW_20;
+					else
+						ht20 = 1; /* assume HT20 if not present */
+
+					if (known & IEEE80211_RADIOTAP_MCS_HAVE_GI)
+						lgi = !(flags & IEEE80211_RADIOTAP_MCS_SGI);
+					else
+						lgi = 1; /* assume long GI if not present */
+
+					
+
+					//p->phy_rate_idx = 12 + *b;
+					p->phy_rate_flags = flags;
+					/*to fix the debug of openwrt*/
+					if (*(b-1) == 0x27)
+						b++;
+					p->phy_rate = mcs_index_to_rate(*b, ht20, lgi);
+					
+					
+					b++;
+					break;
+			}
+		}
+		else {
+			
+		}
+	}
+	
+
+	if (!(present & (1 << IEEE80211_RADIOTAP_DB_ANTSIGNAL))) {
+		/* no SNR in radiotap, try to calculate */
+		if (present & (1 << IEEE80211_RADIOTAP_DBM_ANTSIGNAL) &&
+		    present & (1 << IEEE80211_RADIOTAP_DBM_ANTNOISE) &&
+		    p->phy_noise < 0)
+			p->phy_snr = p->phy_signal - p->phy_noise;
+		/* HACK: here we just assume noise to be -95dBm */
+		else {
+			p->phy_snr = p->phy_signal + 95;
+			//simulate noise: p->phy_noise = -90;
+		}
+	}
+
+	/* sanitize */
+	if (p->phy_snr > 99)
+		p->phy_snr = 99;
+	if (p->phy_rate == 0 || p->phy_rate > 6000) {
+		/* assume min rate for mode */
+		if (p->phy_flags & PHY_FLAG_A)
+			p->phy_rate = 120; /* 6 * 2 */
+		else if (p->phy_flags & PHY_FLAG_B)
+			p->phy_rate = 20; /* 1 * 2 */
+		else if (p->phy_flags & PHY_FLAG_G)
+			p->phy_rate = 120; /* 6 * 2 */
+		else
+			p->phy_rate = 20;
+	}
+
+
+
+	
+	
+	return rt_len;
+}
+
+
+int parse_80211_header(const unsigned char * buf,  struct packet_info* p)
+{
+	
+	struct ieee80211_hdr* wh;
+	struct ieee80211_mgmt* whm;
+	int hdrlen = 0;
+	u8* sa = NULL;
+	u8* da = NULL;
+	u16 fc;
+	//u16 type;
+
+
+
+	wh = (struct ieee80211_hdr*)buf;
+	fc = le16toh(wh->frame_control);
+	//hdrlen = ieee80211_get_hdrlen(fc); //no need
+
+	p->wlan_type = (fc & (IEEE80211_FCTL_FTYPE | IEEE80211_FCTL_STYPE));
+	//type = (fc & (IEEE80211_FCTL_FTYPE | IEEE80211_FCTL_STYPE));
+	
+	switch (p->wlan_type & IEEE80211_FCTL_FTYPE) {
+	case IEEE80211_FTYPE_DATA:
+		hdrlen = 24;
+		switch (p->wlan_type & IEEE80211_FCTL_STYPE) {
+		case IEEE80211_STYPE_NULLFUNC:
+			break;
+		case IEEE80211_STYPE_QOS_DATA:
+			hdrlen = 26;
+			break;
+		}
+
+		p->wlan_nav = le16toh(wh->duration_id);
+
+		sa = ieee80211_get_SA(wh);
+		da = ieee80211_get_DA(wh);
+
+		if (fc & IEEE80211_FCTL_PROTECTED)
+			hdrlen = 34;
+		if (fc & IEEE80211_FCTL_RETRY)
+			p->wlan_retry = 1;
+
+		break;
+
+	case IEEE80211_FTYPE_CTL:
+		switch (p->wlan_type & IEEE80211_FCTL_STYPE) {
+		case IEEE80211_STYPE_RTS:
+			p->wlan_nav = le16toh(wh->duration_id);
+			sa = wh->addr2;
+			da = wh->addr1;
+			break;
+
+		case IEEE80211_STYPE_CTS:
+			p->wlan_nav = le16toh(wh->duration_id);
+			da = wh->addr1;
+			break;
+
+		case IEEE80211_STYPE_ACK:
+			p->wlan_nav = le16toh(wh->duration_id);
+			da = wh->addr1;
+			break;
+
+		case IEEE80211_STYPE_PSPOLL:
+			sa = wh->addr2;
+			break;
+
+		case IEEE80211_STYPE_CFEND:
+		case IEEE80211_STYPE_CFENDACK:
+			da = wh->addr1;
+			sa = wh->addr2;
+			break;
+
+		case IEEE80211_STYPE_BACK_REQ:
+		case IEEE80211_STYPE_BACK:
+			p->wlan_nav = le16toh(wh->duration_id);
+			da = wh->addr1;
+			sa = wh->addr2;
+		}
+		break;
+
+	case IEEE80211_FTYPE_MGMT:
+		//hdrlen = 24;
+		whm = (struct ieee80211_mgmt*)buf;
+		sa = whm->sa;
+		da = whm->da;
+		if (fc & IEEE80211_FCTL_RETRY)
+			p->wlan_retry = 1;
+		switch ( p->wlan_type & IEEE80211_FCTL_STYPE) {
+		case IEEE80211_STYPE_BEACON:
+		case IEEE80211_STYPE_PROBE_RESP:
+/*		{
+			if(debug == 1)
+				printf("begin getting timestamp!\n");
+			struct wlan_frame_beacon* bc = (struct wlan_frame_beacon*)((buf + 24));
+			p->wlan_tsf = le64toh(bc->tsf);
+			if(debug == 1)
+				printf("find a beacon!!\n");
+			break;
+		}*/
+		case IEEE80211_STYPE_PROBE_REQ:
+		case IEEE80211_STYPE_ASSOC_REQ:
+		case IEEE80211_STYPE_ASSOC_RESP:
+		case IEEE80211_STYPE_REASSOC_REQ:
+		case IEEE80211_STYPE_REASSOC_RESP:
+		case IEEE80211_STYPE_DISASSOC:
+		case IEEE80211_STYPE_AUTH:
+		case IEEE80211_STYPE_DEAUTH:
+			break;
+		}
+		break;
+	
+	}
+
+	if (sa != NULL) {
+		memcpy(p->wlan_src, sa, MAC_LEN);
+	}
+	if (da != NULL) {
+		memcpy(p->wlan_dst, da, MAC_LEN);
+	}
+	
+	return hdrlen;
+
+}
+
+/* return 1 if we parsed enough = min ieee header */
+int parse_packet(const unsigned char *buf,  struct packet_info* p)
+{
+	
+	int radio = parse_radiotap_header(buf,p);
+
+	p->len = p->len - radio;
+	
+	int hdr = parse_80211_header(buf+radio,p);
+	
+	int llc = 8; /**/
+	parse_ip_packet(buf+radio+hdr+llc,p);
+	p->ip_totlen = radio+hdr+llc;
+	p->tcp_type = hdr;
+	return 0;
+}
+
+int parse_ip_packet(const unsigned char *buf,  struct packet_info* p)
+{
+	u8 *raw = (u8 *)(buf);
+	if(((*raw) & 0x60) == 0x40){
+		struct ip* ih;
+		ih = (struct ip*)(buf);
+		int ipl = ih->ip_hl*4;
+		p->ip_totlen = ntohs(ih->ip_len);
+		p->ip_id = ntohs(ih->ip_id);
+		p->ip_off = ntohs(ih->ip_off);
+		
+	}else{
+		
+		/*ipv6, do nothing, need to be continue...*/
+	}
+	return 0;
+}
+			  
+
+const char*
+digest_sprintf16(const unsigned char *mac)   
+{
+	static char etherbuf[33];
+	snprintf(etherbuf, sizeof(etherbuf), "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
+		mac[0], mac[1], mac[2], mac[3], mac[4], mac[5],mac[6]
+		,mac[7], mac[8], mac[9], mac[10], mac[11], mac[12],mac[13]
+		,mac[14], mac[15]);
+	return etherbuf;
+}
+const char*
+digest_sprintf30(const unsigned char *mac)   
+{
+	static char etherbuf[61];
+	snprintf(etherbuf, sizeof(etherbuf), "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
+		mac[0], mac[1], mac[2], mac[3], mac[4], mac[5],mac[6]
+		,mac[7], mac[8], mac[9], mac[10], mac[11], mac[12],mac[13]
+		,mac[14], mac[15], mac[16], mac[17], mac[18], mac[19]
+		,mac[20], mac[21], mac[22], mac[23], mac[24], mac[25]
+		,mac[26], mac[27], mac[28], mac[29]);
+	return etherbuf;
+}
+
+int str_equal(const unsigned char *s1,const unsigned char *s2,int len){
+	int i ;
+	for (i = 0; i < len ; i++)
+	{
+		if(( s1[i] != s2[i] )&&(tolower(s1[i]) != s2[i]))
+			return 0;
+	}
+	return 1;
+}
+
 #endif
