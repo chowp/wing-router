@@ -280,7 +280,7 @@ static void write_frequent_print_interference() {
 		// 	inf_start_timestamp,inf_end_timestamp,
 		// 	ether_sprintf(cs[j].wlan_src),ether_sprintf2(cs[j].wlan_dst),cs[j].value);
 		overall_busywait = overall_busywait + (double)cs[j].value;
-		printf("%f,%f,%f\n",overall_busywait,cs[j].value,(double)cs[j].value/overall_busywait);
+		//printf("%f,%f,%f\n",overall_busywait,cs[j].value,(double)cs[j].value/overall_busywait);
 	}
 	
 	printf("\nCS:");	
