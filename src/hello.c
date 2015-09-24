@@ -287,7 +287,7 @@ static void write_frequent_print_interference() {
 	for(j = 0 ; j < CS_NUMBER ; j ++){
 		if (cs[j].value == 0)
 			break;
-		cs[j].percentage = ((double)cs[j].value/overall_busywait);
+		cs[j].percentage = 100.0*((double)cs[j].value/overall_busywait);
 		printf("%f%%,",cs[j].percentage); 
 	}
 
