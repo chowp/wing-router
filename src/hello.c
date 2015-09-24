@@ -93,11 +93,11 @@ static int nb_num = 1;
 /*
 To check whether the current packet is in the cs list(\gamma) 
 */
-bool existing_cs(struct inf_info *inf,int i, unsigned char mac1[], unsigned char mac2[]){
+bool matched(struct inf_info *inf,int i, unsigned char mac1[], unsigned char mac2[]){
 	if ( (str_equal(ether_sprintf(mac1),ether_sprintf2(inf[i].wlan_src),2*MAC_LEN) != 1) &&
-	   (str_equal(ether_sprintf(mac2),ether_sprintf2(inf[i].wlan_src),2*MAC_LEN) != 1) ) 
+	   (str_equal(ether_sprintf(mac1),ether_sprintf2(inf[i].wlan_dst),2*MAC_LEN) != 1) ) 
 		return false;
-	if ( (str_equal(ether_sprintf(mac1),ether_sprintf2(inf[i].wlan_dst),2*MAC_LEN) != 1) &&
+	if ( (str_equal(ether_sprintf(mac2),ether_sprintf2(inf[i].wlan_src),2*MAC_LEN) != 1) &&
 	   (str_equal(ether_sprintf(mac2),ether_sprintf2(inf[i].wlan_dst),2*MAC_LEN) != 1) ) 
 		return false;
 	return true;
@@ -108,11 +108,7 @@ To judge whether the current packet are broadcast, cts, ack or control packet(\g
 bool non_control_packet(struct inf_info *inf,unsigned char mac1[], unsigned char mac2[]){
 	if (str_equal(mac_zero,ether_sprintf(mac1),2*MAC_LEN) == 1)
 		return false;
-	if (str_equal(mac_ffff,ether_sprintf(mac1),2*MAC_LEN) == 1)
-		return false;
 	if (str_equal(mac_zero,ether_sprintf(mac2),2*MAC_LEN) == 1)
-		return false;
-	if (str_equal(mac_ffff,ether_sprintf(mac2),2*MAC_LEN) == 1)
 		return false;
 	return true;
 }
@@ -132,7 +128,7 @@ bool update_list(struct inf_info *inf,int NUMBER, unsigned char mac1[], unsigned
 		if (!non_control_packet(inf,mac1,mac2)){
 			continue;
 		} 
-		if (existing_cs(inf,i,mac1,mac2)){
+		if (matched(inf,i,mac1,mac2)){
 			inf[i].value = inf[i].value + value;
 		}
 	}
@@ -382,7 +378,7 @@ static void process_packet(
 			double libpcap_timestamp = store[pii].tv.tv_sec + (double)store[pii].tv.tv_usec/(double)NUM_MICROS_PER_SECOND;
 		
 
-			printf("-----[%d/%d]:[%s+%s]:%f<---->%f\n",pii,pj,ether_sprintf(store[pii].wlan_src),ether_sprintf2(store[pii].wlan_dst),neighbor_timestamp,libpcap_timestamp);						
+			//printf("-----[%d/%d]:[%s+%s]:%f<---->%f\n",pii,pj,ether_sprintf(store[pii].wlan_src),ether_sprintf2(store[pii].wlan_dst),neighbor_timestamp,libpcap_timestamp);						
 			
 
 
