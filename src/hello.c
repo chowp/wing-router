@@ -142,7 +142,7 @@ bool update_list(struct inf_info *inf,int NUMBER, unsigned char mac1[], unsigned
 			memcpy(inf[i].wlan_dst,mac2,MAC_LEN);
 			
 			inf[i].value = value;
-			summay.inf_num = summay.inf_num + 1;
+			summary.inf_num = summary.inf_num + 1;
 			//printf("C  %s+%s:%f\n",ether_sprintf(mac1),ether_sprintf2(mac2),inf[i].value);
 			//printf("*******************************\n\n");
 			return; /*pay attention whether it will jump out!*/
