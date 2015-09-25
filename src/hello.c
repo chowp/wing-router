@@ -150,6 +150,12 @@ bool update_list(struct inf_info *inf,int NUMBER, unsigned char mac1[], unsigned
 	}
 }
 
+static void print_summay(){
+	printf("inf_num=%f,overall_extra_time=%f,overall_busywait=%f,",summary.inf_num,summary.overall_extra_time,summary.overall_busywait);
+	printf("mine_packet=%f,mine_throughput=%f,",summary.mine_packet,(float)summary.mine_bytes/(float)FREQUENT_UPDATE_PERIOD_SECONDS)
+	printf("inf_packets=%f,inf_throughput=%f\n",summary.inf_packets,(float)summary.inf_bytes/(float)FREQUENT_UPDATE_PERIOD_SECONDS);
+}
+
 /*
  print out the packet trace
 */
@@ -271,7 +277,6 @@ static void write_frequent_print_interference() {
  
   	/*print out*/ 	
 	int j = 0;
-	double overall_busywait = 0;
 	for (j = 0 ; j < CS_NUMBER ;j ++)
 	{
 		if (cs[j].value == 0)
@@ -279,7 +284,7 @@ static void write_frequent_print_interference() {
 		// fprintf(handle,"cs,%lf,%lf,%s,%s,%f\n",
 		// 	inf_start_timestamp,inf_end_timestamp,
 		// 	ether_sprintf(cs[j].wlan_src),ether_sprintf2(cs[j].wlan_dst),cs[j].value);
-		overall_busywait = overall_busywait + (double)cs[j].value;
+		summary.overall_busywait = summary.overall_busywait + (double)cs[j].value;
 		//printf("%f,%f,%f\n",overall_busywait,cs[j].value,(double)cs[j].value/overall_busywait);
 	}
 	
@@ -287,7 +292,7 @@ static void write_frequent_print_interference() {
 	for(j = 0 ; j < CS_NUMBER ; j ++){
 		if (cs[j].value == 0)
 			break;
-		cs[j].percentage = 100.0*((double)cs[j].value/overall_busywait);
+		cs[j].percentage = 100.0*((double)cs[j].value/(double)summary.overall_busywait);
 		printf("%f%%,",cs[j].percentage); 
 	}
 
@@ -300,7 +305,7 @@ static void write_frequent_print_interference() {
   	fclose(handle);
 
 	// print summary info
-	printf("\ninf_num=%d,extra=%f,busywait=%f",summary.inf_num,summary.overall_extra_time,overall_busywait);
+	print_summay();
 	memset(&summary, 0, sizeof(summary));
 	
   	int file_time = (int)inf_end_timestamp;
@@ -389,6 +394,8 @@ static void process_packet(
 		if (tw > last_te){
 			th = tw;
 		}
+		summary.mine_bytes = summary.mine_bytes + p.len;
+		summary.mine_packets = summary.mine_packets + 1;
 		summary.overall_extra_time = summary.overall_extra_time + te - th;
 		if(debug == LOG_DEBUG_EXTRA){
 			printf("\nextra time:%f,delta:%f",summary.overall_extra_time,te-th);
@@ -409,12 +416,15 @@ static void process_packet(
 			if ( ( neighbor_timestamp > th ) && ( neighbor_timestamp < te) ) 
 			{
 
+
 				if((str_equal(mac,ether_sprintf(store[pii].wlan_dst),2*MAC_LEN) == 1) ||
 			  	   (str_equal(mac,ether_sprintf2(store[pii].wlan_src),2*MAC_LEN) == 1)) {
 					//printf("\n[%f,%f] packet type is %d",tw,te,store[pii].wlan_type);
 					pii = (pii+1)%HOLD_TIME;
 					continue;
 				}
+				summary.inf_bytes = summary.inf_bytes + (float)store[ii].len;
+				summary.inf_packets = summary.inf_packets + 1;
 				busywait = (float)store[pii].len * 8 * 10 / (float)store[pii].phy_rate;
 				busywait = busywait/(float)NUM_MICROS_PER_SECOND;
 				//printf("-----%s busywait %f\n",ether_sprintf(store[pi].wlan_src),busywait);

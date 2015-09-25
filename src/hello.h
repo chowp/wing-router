@@ -108,9 +108,10 @@ struct inf_info {
 struct summary_info{
 	float inf_packets;
 	float mine_packets;
-	float inf_avg_throughput;
-	float mine_avg_throughput;
+	float inf_bytes;
+	float mine_bytes;
 	float overall_extra_time;
+	double overall_busywait;
 	int inf_num;
 };
 /***************
