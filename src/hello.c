@@ -151,11 +151,19 @@ bool update_list(struct inf_info *inf,int NUMBER, unsigned char mac1[], unsigned
 }
 
 static void print_summay(){
-	printf("\ninf_num=%f,overall_extra_time=%f,overall_busywait=%f,",summary.inf_num,summary.overall_extra_time,summary.overall_busywait);
-	printf("mine_packet=%f,mine_throughput=%f,",summary.mine_packets,(float)summary.mine_bytes/(float)FREQUENT_UPDATE_PERIOD_SECONDS);
-	printf("inf_packets=%f,inf_throughput=%f\n",summary.inf_packets,(float)summary.inf_bytes/(float)FREQUENT_UPDATE_PERIOD_SECONDS);
+	printf("\ninf_num=%d,overall_extra_time=%.2f,overall_busywait=%.2f,",summary.inf_num,summary.overall_extra_time,summary.overall_busywait);
+	printf("mine_packet=%d,mine_throughput=%.2f,",summary.mine_packets,(float)summary.mine_bytes/(float)FREQUENT_UPDATE_PERIOD_SECONDS);
+	printf("inf_packets=%d,inf_throughput=%.2f\n",summary.inf_packets,(float)summary.inf_bytes/(float)FREQUENT_UPDATE_PERIOD_SECONDS);
 }
-
+static void reset_summary(){
+	summary.mine_bytes = 0;
+	summary.mine_packets = 0;
+	summary.inf_bytes = 0;
+	summary.inf_packets = 0;
+	summary.inf_num =0;
+	summary.overall_busywait = 0;
+	summary.overall_extra_time = 0;
+}
 /*
  print out the packet trace
 */
