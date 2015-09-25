@@ -151,9 +151,9 @@ bool update_list(struct inf_info *inf,int NUMBER, unsigned char mac1[], unsigned
 }
 
 static void print_summay(){
-	printf("\ninf_num=%d,overall_extra_time=%.2f,overall_busywait=%.2f,",summary.inf_num,summary.overall_extra_time,summary.overall_busywait);
-	printf("mine_packet=%d,mine_throughput=%.2f,",summary.mine_packets,(float)summary.mine_bytes/(float)FREQUENT_UPDATE_PERIOD_SECONDS);
-	printf("inf_packets=%d,inf_throughput=%.2f\n",summary.inf_packets,(float)summary.inf_bytes/(float)FREQUENT_UPDATE_PERIOD_SECONDS);
+	printf("\ninf_num=%d\noverall_extra_time=%.2f\noverall_busywait=%.2f\n",summary.inf_num,summary.overall_extra_time,summary.overall_busywait);
+	printf("mine_packet=%.1f\nmine_throughput=%.2fKB/s\n",summary.mine_packets,(float)summary.mine_bytes*0.001/(float)FREQUENT_UPDATE_PERIOD_SECONDS);
+	printf("inf_packets=%.1f\ninf_throughput=%.2fKB/s\n",summary.inf_packets,(float)summary.inf_bytes*0.001/(float)FREQUENT_UPDATE_PERIOD_SECONDS);
 }
 static void reset_summary(){
 	summary.mine_bytes = 0;
@@ -301,7 +301,7 @@ static void write_frequent_print_interference() {
 		if (cs[j].value == 0)
 			break;
 		cs[j].percentage = 100.0*((double)cs[j].value/(double)summary.overall_busywait);
-		printf("%f%%,",cs[j].percentage); 
+		printf("%.1f%%,",cs[j].percentage); 
 	}
 
 	// fprintf(handle,"ht,%lf,%lf,ht,ht,%f\n",
