@@ -5,6 +5,7 @@
 #include <sys/time.h>
 
 /*define the print debug level, sorted by the load to the AP */
+#define LOG_DEBUG_EXTRA -2
 #define LOG_DEBUG -1
 #define LOG_SLIENT 0
 #define LOG_INF 1
