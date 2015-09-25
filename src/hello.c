@@ -151,11 +151,11 @@ bool update_list(struct inf_info *inf,int NUMBER, unsigned char mac1[], unsigned
 }
 
 static void print_summay(){
-	printf("\ninf_num           =%d\n",summary.inf_num);
-	printf("overall_extra_time  =%.2f seconds\n",summary.overall_extra_time);
-	printf("overall_busywait    =%.2f seconds\n",summary.overall_busywait);
-	printf("mine_packet         =%.1f\n",summary.mine_packets);
+	printf("\ninterferes          =%d\n",summary.inf_num);
+	printf("mine_packets        =%.1f\n",summary.mine_packets);
 	printf("inf_packets         =%.1f\n",summary.inf_packets);
+	printf("overall_tx_airtime  =%.2f seconds\n",summary.overall_extra_time);
+	printf("overall_busywait    =%.2f seconds\n",summary.overall_busywait);
 	printf("mine_throughput     =%.2f KB/s\n",(float)summary.mine_bytes*0.001/(float)FREQUENT_UPDATE_PERIOD_SECONDS);
 	printf("inf_throughput      =%.2f KB/s\n",(float)summary.inf_bytes*0.001/(float)FREQUENT_UPDATE_PERIOD_SECONDS);
 	printf("sniffer_throughput  =%.2f KB/s\n",(double)summary.sniffer_bytes*0.001/(double)FREQUENT_UPDATE_PERIOD_SECONDS);
@@ -346,6 +346,32 @@ static void write_frequent_print_interference() {
 
 }
 
+static void load_test(  u_char* const user,
+        const struct pcap_pkthdr* const header,
+        const u_char* const bytes){
+// if (sigprocmask(SIG_BLOCK, &block_set, NULL) < 0) {
+//     perror("sigprocmask");
+//     exit(1);
+//  }
+	rpp++;
+	memset(&p, 0, sizeof(p));
+	p.len = header->len;
+	p.tv.tv_sec = header->ts.tv_sec;
+	p.tv.tv_usec = header->ts.tv_usec;
+	inf_end_timestamp = p.tv.tv_sec + (double)p.tv.tv_usec/(double)NUM_MICROS_PER_SECOND;
+	//printf("start time is %f, end time is %f\n",inf_start_timestamp,inf_end_timestamp);
+	if ((inf_end_timestamp - inf_start_timestamp) > FREQUENT_UPDATE_PERIOD_SECONDS)
+	{
+		/*print out*/
+		if (debug == LOG_INF)
+			write_frequent_print_interference(); 
+		//write_frequent_print_overall_interference();
+		memset(cs,0,sizeof(cs));
+		ht_sum = 0;
+		cs_sum = 0;
+		inf_start_timestamp = inf_end_timestamp;
+	}	
+}
 
 /* libpcap calls this function for every packet it receives. */
 static void process_packet(
@@ -582,7 +608,7 @@ int main(int argc,char *argv[]){
 	
 	pkt = pcap_dump_open(pcap_handle,DUMP_DIR);
 	
-	pcap_loop(pcap_handle,QUEUE_SIZE,process_packet,(u_char *)pkt);
+	pcap_loop(pcap_handle,QUEUE_SIZE,load_test,(u_char *)pkt);
 	
 	
 	printf("end capturing......\n");
