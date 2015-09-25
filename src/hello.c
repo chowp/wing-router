@@ -151,10 +151,14 @@ bool update_list(struct inf_info *inf,int NUMBER, unsigned char mac1[], unsigned
 }
 
 static void print_summay(){
-	printf("\ninf_num=%d\noverall_extra_time=%.2f\noverall_busywait=%.2f\n",summary.inf_num,summary.overall_extra_time,summary.overall_busywait);
-	printf("mine_packet=%.1f\nmine_throughput=%.2fKB/s\n",summary.mine_packets,(float)summary.mine_bytes*0.001/(float)FREQUENT_UPDATE_PERIOD_SECONDS);
-	printf("inf_packets=%.1f\ninf_throughput=%.2fKB/s\n",summary.inf_packets,(float)summary.inf_bytes*0.001/(float)FREQUENT_UPDATE_PERIOD_SECONDS);
-	printf("sniffer_throughput=%.1f\n",(double)summary.sniffer_bytes*0.001/(double)FREQUENT_UPDATE_PERIOD_SECONDS);
+	printf("\ninf_num           =%d\n",summary.inf_num);
+	printf("overall_extra_time  =%.2f seconds\n",summary.overall_extra_time);
+	printf("overall_busywait    =%.2f seconds\n",summary.overall_busywait);
+	printf("mine_packet         =%.1f\n",summary.mine_packets);
+	printf("inf_packets         =%.1f\n",summary.inf_packets);
+	printf("mine_throughput     =%.2f KB/s\n",(float)summary.mine_bytes*0.001/(float)FREQUENT_UPDATE_PERIOD_SECONDS);
+	printf("inf_throughput      =%.2f KB/s\n",(float)summary.inf_bytes*0.001/(float)FREQUENT_UPDATE_PERIOD_SECONDS);
+	printf("sniffer_throughput  =%.2f KB/s\n",(double)summary.sniffer_bytes*0.001/(double)FREQUENT_UPDATE_PERIOD_SECONDS);
 }
 static void reset_summary(){
 	summary.mine_bytes = 0;
@@ -317,7 +321,7 @@ static void write_frequent_print_interference() {
 	print_summay();
 	memset(&summary, 0, sizeof(summary));
 	
-	
+
   	int file_time = (int)inf_end_timestamp;
   	char update_filename[FILENAME_MAX];
   	snprintf(update_filename,
