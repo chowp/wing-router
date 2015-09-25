@@ -154,6 +154,7 @@ static void print_summay(){
 	printf("\ninf_num=%d\noverall_extra_time=%.2f\noverall_busywait=%.2f\n",summary.inf_num,summary.overall_extra_time,summary.overall_busywait);
 	printf("mine_packet=%.1f\nmine_throughput=%.2fKB/s\n",summary.mine_packets,(float)summary.mine_bytes*0.001/(float)FREQUENT_UPDATE_PERIOD_SECONDS);
 	printf("inf_packets=%.1f\ninf_throughput=%.2fKB/s\n",summary.inf_packets,(float)summary.inf_bytes*0.001/(float)FREQUENT_UPDATE_PERIOD_SECONDS);
+	printf("sniffer_throughput=%.1f\n",(double)summary.sniffer_bytes*0.001/(double)FREQUENT_UPDATE_PERIOD_SECONDS);
 }
 static void reset_summary(){
 	summary.mine_bytes = 0;
@@ -315,7 +316,7 @@ static void write_frequent_print_interference() {
 	// print summary info
 	print_summay();
 	memset(&summary, 0, sizeof(summary));
-	print_summay();
+	
 	
   	int file_time = (int)inf_end_timestamp;
   	char update_filename[FILENAME_MAX];
@@ -337,10 +338,7 @@ static void write_frequent_print_interference() {
     struct pcap_stat statistics;
     pcap_stats(pcap_handle, &statistics);
 
-	if (debug == LOG_DEBUG)
-	{
-		printf("received is: %d,dropped is: %d, total packets are :%d\n",statistics.ps_recv,statistics.ps_drop,rpp);
-	}
+	printf("received is: %d,dropped is: %d, total packets are :%d\n",statistics.ps_recv,statistics.ps_drop,rpp);
 
 }
 
@@ -394,7 +392,8 @@ static void process_packet(
 		printf("+++++packet %d:%f<---->%f\n",rpp,neighbor_timestamp,libpcap_timestamp);	
 	}
 	
-	
+	summary.sniffer_bytes = summary.sniffer_bytes + p.len;
+
 	if( ( (p.wlan_type == (u16)136) || (p.wlan_type == (u16)8) )
 	   && (str_equal(mac,ether_sprintf(p.wlan_src),2*MAC_LEN) == 1)){ /*trigger calculation*/
 		double tw = p.tv.tv_sec + (double)p.tv.tv_usec/(double)NUM_MICROS_PER_SECOND;

@@ -106,6 +106,7 @@ struct inf_info {
 	float percentage;
 };
 struct summary_info{
+	float sniffer_bytes;
 	float inf_packets;
 	float mine_packets;
 	float inf_bytes;
