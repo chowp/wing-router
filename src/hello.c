@@ -391,7 +391,7 @@ static void process_packet(
 		}
 		summary.overall_extra_time = summary.overall_extra_time + te - th;
 		if(debug == LOG_DEBUG_EXTRA){
-			printf("extra time:%f,delta:%f",summary.overall_extra_time,te-th);
+			printf("\nextra time:%f,delta:%f",summary.overall_extra_time,te-th);
 		}
 		double neighbor_timestamp = store[pi].tv.tv_sec + (double)store[pi].tv.tv_usec/(double)NUM_MICROS_PER_SECOND;
 		
