@@ -152,7 +152,7 @@ bool update_list(struct inf_info *inf,int NUMBER, unsigned char mac1[], unsigned
 
 static void print_summay(){
 	printf("inf_num=%f,overall_extra_time=%f,overall_busywait=%f,",summary.inf_num,summary.overall_extra_time,summary.overall_busywait);
-	printf("mine_packet=%f,mine_throughput=%f,",summary.mine_packet,(float)summary.mine_bytes/(float)FREQUENT_UPDATE_PERIOD_SECONDS)
+	printf("mine_packet=%f,mine_throughput=%f,",summary.mine_packets,(float)summary.mine_bytes/(float)FREQUENT_UPDATE_PERIOD_SECONDS);
 	printf("inf_packets=%f,inf_throughput=%f\n",summary.inf_packets,(float)summary.inf_bytes/(float)FREQUENT_UPDATE_PERIOD_SECONDS);
 }
 
