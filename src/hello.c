@@ -307,6 +307,7 @@ static void write_frequent_print_interference() {
 	// print summary info
 	print_summay();
 	memset(&summary, 0, sizeof(summary));
+	print_summay();
 	
   	int file_time = (int)inf_end_timestamp;
   	char update_filename[FILENAME_MAX];
