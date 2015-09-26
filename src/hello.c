@@ -168,6 +168,9 @@ static void reset_summary(){
 	summary.inf_num =0;
 	summary.overall_busywait = 0;
 	summary.overall_extra_time = 0;
+	summary.sniffer_bytes = 0;
+	summary.recved = 0;
+	summary.dropped = 0;
 }
 /*
  print out the packet trace
@@ -319,9 +322,7 @@ static void write_frequent_print_interference() {
 
 	// print summary info
 	print_summay();
-	memset(&summary, 0, sizeof(summary));
 	
-
   	int file_time = (int)inf_end_timestamp;
   	char update_filename[FILENAME_MAX];
   	snprintf(update_filename,
@@ -345,7 +346,8 @@ static void write_frequent_print_interference() {
     int drop = statistics.ps_drop;
     double instant_loss = (double)(drop-summary.dropped)/(double)(recv-summary.recved);
     double loss = (double)drop/(double)recv;
-	printf("received is: %d,dropped is: %d, total packets are :%d, instant loss rate:%f, loss rate:%f\n",recv,drop,rpp,instant_loss,loss);
+	printf("received is: %d,dropped is: %d, total packets are :%d, instant loss rate:%.2f, loss rate:%.2f\n",recv,drop,rpp,instant_loss,loss);
+	memset(&summary, 0, sizeof(summary));
 	summary.recved = recv;
 	summary.dropped = drop;
 
