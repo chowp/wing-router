@@ -347,6 +347,7 @@ static void write_frequent_print_interference() {
     double instant_loss = (double)(drop-summary.dropped)/(double)(recv-summary.recved);
     double loss = (double)drop/(double)recv;
 	printf("received is: %d,dropped is: %d, total packets are :%d, instant loss rate:%.2f, loss rate:%.2f\n",recv,drop,rpp,instant_loss,loss);
+	printf("theoretically sniffer_throughput is : %.2f KB/s\n",summary.sniffer_throughput/instant_loss)
 	memset(&summary, 0, sizeof(summary));
 	summary.recved = recv;
 	summary.dropped = drop;
