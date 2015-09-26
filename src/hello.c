@@ -341,8 +341,13 @@ static void write_frequent_print_interference() {
 
     struct pcap_stat statistics;
     pcap_stats(pcap_handle, &statistics);
-
-	printf("received is: %d,dropped is: %d, total packets are :%d\n",statistics.ps_recv,statistics.ps_drop,rpp);
+    int recv = statistics.ps_recv;
+    int drop = statistics.ps_drop;
+    double instant_loss = (double)(drop-summary.dropped)/(double)(recv-summary.recved);
+    double loss = (double)drop/(double)recv;
+	printf("received is: %d,dropped is: %d, total packets are :%d, instant loss rate:%f, loss rate:%f\n",recv,drop,rpp,instant_loss,loss);
+	summary.recved = recv;
+	summary.dropped = drop;
 
 }
 
@@ -356,6 +361,7 @@ static void load_test(  u_char* const user,
 	rpp++;
 	memset(&p, 0, sizeof(p));
 	p.len = header->len;
+	summary.sniffer_bytes = summary.sniffer_bytes + p.len;
 	p.tv.tv_sec = header->ts.tv_sec;
 	p.tv.tv_usec = header->ts.tv_usec;
 	inf_end_timestamp = p.tv.tv_sec + (double)p.tv.tv_usec/(double)NUM_MICROS_PER_SECOND;

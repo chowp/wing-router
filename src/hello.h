@@ -114,6 +114,8 @@ struct summary_info{
 	float overall_extra_time;
 	double overall_busywait;
 	int inf_num;
+	int recved;
+	int dropped;
 };
 /***************
  store the delay break down info
