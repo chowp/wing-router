@@ -617,7 +617,7 @@ int main(int argc,char *argv[]){
 	
 	pkt = pcap_dump_open(pcap_handle,DUMP_DIR);
 	
-	pcap_loop(pcap_handle,QUEUE_SIZE,load_test,(u_char *)pkt);
+	pcap_loop(pcap_handle,QUEUE_SIZE,process_packet,(u_char *)pkt);
 	
 	
 	printf("end capturing......\n");
